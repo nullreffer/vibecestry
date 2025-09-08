@@ -1,0 +1,49 @@
+.relationship-label-bg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: all 0.2s ease;
+}
+
+.relationship-label-text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  user-select: none;
+}
+
+.react-flow__edge:hover .relationship-label-bg {
+  fill: #404040;
+  stroke: #6ede87;
+}
+
+.react-flow__edge:hover .relationship-label-text {
+  fill: #6ede87;
+}
+
+/* Different styles for different relationship types */
+.react-flow__edge[data-relationship="spouse"] .relationship-label-bg {
+  fill: #4a1a2a;
+  stroke: #e24a90;
+}
+
+.react-flow__edge[data-relationship="spouse"] .relationship-label-text {
+  fill: #e24a90;
+}
+
+.react-flow__edge[data-relationship="parent"] .relationship-label-bg {
+  fill: #1a2a4a;
+  stroke: #4a90e2;
+}
+
+.react-flow__edge[data-relationship="parent"] .relationship-label-text {
+  fill: #4a90e2;
+}
+
+.react-flow__edge[data-relationship="child"] .relationship-label-bg {
+  fill: #2a4a1a;
+  stroke: #6ede87;
+}
+
+.react-flow__edge[data-relationship="child"] .relationship-label-text {
+  fill: #6ede87;
+}

@@ -11,6 +11,8 @@ import ReactFlow, {
 import PersonNode from '../nodes/PersonNode';
 import MaleNode from '../nodes/MaleNode';
 import FemaleNode from '../nodes/FemaleNode';
+import PersonEditDialog from '../components/PersonEditDialog';
+import RelationshipEdge from '../edges/RelationshipEdge';
 import './EditFlow.css';
 
 // Custom node types for ancestry
@@ -18,6 +20,10 @@ const nodeTypes = {
   person: PersonNode,
   male: MaleNode,
   female: FemaleNode,
+};
+
+const edgeTypes = {
+  relationship: RelationshipEdge,
 };
 
 const EditFlow = () => {
@@ -31,6 +37,8 @@ const EditFlow = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [nodeIdCounter, setNodeIdCounter] = useState(5);
+  const [editingPerson, setEditingPerson] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     loadFlow();
@@ -93,14 +101,16 @@ const EditFlow = () => {
               id: 'e1-2', 
               source: '1', 
               target: '2', 
-              type: 'straight',
+              type: 'relationship',
+              data: { label: 'Husband', relationshipType: 'spouse' },
               style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
             },
             { 
               id: 'e3-1', 
               source: '3', 
               target: '1', 
-              type: 'smoothstep',
+              type: 'relationship',
+              data: { label: 'Father', relationshipType: 'parent' },
               animated: true,
               style: { stroke: '#6ede87', strokeWidth: 2 }
             },
@@ -108,7 +118,8 @@ const EditFlow = () => {
               id: 'e1-4', 
               source: '1', 
               target: '4', 
-              type: 'smoothstep',
+              type: 'relationship',
+              data: { label: 'Father', relationshipType: 'parent' },
               animated: true,
               style: { stroke: '#6ede87', strokeWidth: 2 }
             },
@@ -165,7 +176,8 @@ const EditFlow = () => {
               id: 'e1-2', 
               source: '1', 
               target: '2', 
-              type: 'smoothstep',
+              type: 'relationship',
+              data: { label: 'Mother', relationshipType: 'parent' },
               animated: true,
               style: { stroke: '#6ede87', strokeWidth: 2 }
             },
@@ -173,14 +185,16 @@ const EditFlow = () => {
               id: 'e2-3', 
               source: '2', 
               target: '3', 
-              type: 'straight',
+              type: 'relationship',
+              data: { label: 'Husband', relationshipType: 'spouse' },
               style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
             },
             { 
               id: 'e2-4', 
               source: '2', 
               target: '4', 
-              type: 'smoothstep',
+              type: 'relationship',
+              data: { label: 'Father', relationshipType: 'parent' },
               animated: true,
               style: { stroke: '#6ede87', strokeWidth: 2 }
             },
@@ -262,24 +276,51 @@ const EditFlow = () => {
     }
   };
 
+  // Function to determine relationship labels
+  const getRelationshipLabel = useCallback((direction, sourceGender, targetGender) => {
+    switch (direction) {
+      case 'parent':
+        // Source is parent, target is child
+        return sourceGender === 'male' ? 'Father' : sourceGender === 'female' ? 'Mother' : 'Parent';
+      case 'child':
+        // Source is parent, target is child
+        return targetGender === 'male' ? 'Son' : targetGender === 'female' ? 'Daughter' : 'Child';
+      case 'spouse-left':
+      case 'spouse-right':
+        // Marriage relationship
+        if (sourceGender === 'male' && targetGender === 'female') return 'Husband';
+        if (sourceGender === 'female' && targetGender === 'male') return 'Wife';
+        return 'Spouse';
+      default:
+        return 'Related';
+    }
+  }, []);
+
   // Function to handle adding new person
   const handleAddPerson = useCallback((sourceNodeId, direction) => {
+    const sourceNode = nodes.find(n => n.id === sourceNodeId);
+    if (!sourceNode) return;
+
     const newNodeId = String(nodeIdCounter);
     const newPosition = calculateNewPosition(sourceNodeId, direction);
     const personData = generatePersonData(direction === 'spouse-left' || direction === 'spouse-right' ? 'spouse' : direction);
     
     // Determine node type based on relationship and random gender
-    const nodeType = Math.random() > 0.5 ? 'male' : 'female';
+    const newPersonGender = Math.random() > 0.5 ? 'male' : 'female';
+    const nodeType = newPersonGender;
     
     const newNode = {
       id: newNodeId,
       type: nodeType,
-      data: personData,
+      data: { ...personData, gender: newPersonGender },
       position: newPosition,
     };
 
     // Add the new node
     setNodes((nds) => nds.concat(newNode));
+    
+    // Get source node gender for relationship labeling
+    const sourceGender = sourceNode.data.gender || 'unknown';
     
     // Create connection between nodes
     let newEdge;
@@ -289,7 +330,11 @@ const EditFlow = () => {
           id: `e${newNodeId}-${sourceNodeId}`,
           source: newNodeId,
           target: sourceNodeId,
-          type: 'smoothstep',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel(direction, newPersonGender, sourceGender),
+            relationshipType: 'parent'
+          },
           animated: true,
           style: { stroke: '#6ede87', strokeWidth: 2 }
         };
@@ -299,7 +344,11 @@ const EditFlow = () => {
           id: `e${sourceNodeId}-${newNodeId}`,
           source: sourceNodeId,
           target: newNodeId,
-          type: 'smoothstep',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel(direction, sourceGender, newPersonGender),
+            relationshipType: 'child'
+          },
           animated: true,
           style: { stroke: '#6ede87', strokeWidth: 2 }
         };
@@ -310,7 +359,11 @@ const EditFlow = () => {
           id: `e${sourceNodeId}-${newNodeId}`,
           source: sourceNodeId,
           target: newNodeId,
-          type: 'straight',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel(direction, sourceGender, newPersonGender),
+            relationshipType: 'spouse'
+          },
           animated: false,
           style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
         };
@@ -339,6 +392,33 @@ const EditFlow = () => {
     setNodes((nds) => nds.concat(newNode));
     setNodeIdCounter(prev => prev + 1);
   };
+
+  // Handle editing a person
+  const handleEditPerson = useCallback((personId, personData) => {
+    setEditingPerson({ id: personId, ...personData });
+    setIsEditDialogOpen(true);
+  }, []);
+
+  // Handle saving edited person data
+  const handleSaveEditedPerson = useCallback((editedData) => {
+    if (editingPerson) {
+      setNodes((nds) => 
+        nds.map(node => 
+          node.id === editingPerson.id 
+            ? { ...node, data: { ...node.data, ...editedData } }
+            : node
+        )
+      );
+    }
+    setIsEditDialogOpen(false);
+    setEditingPerson(null);
+  }, [editingPerson]);
+
+  // Handle canceling edit
+  const handleCancelEdit = useCallback(() => {
+    setIsEditDialogOpen(false);
+    setEditingPerson(null);
+  }, []);
 
   const handleSave = async () => {
     if (!flowName.trim()) {
@@ -481,7 +561,8 @@ const EditFlow = () => {
               ...node,
               data: {
                 ...node.data,
-                onAddPerson: handleAddPerson
+                onAddPerson: handleAddPerson,
+                onEdit: handleEditPerson
               }
             }))}
             edges={edges}
@@ -489,6 +570,7 @@ const EditFlow = () => {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             style={{ background: '#1a1a1a' }}
             defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
@@ -531,6 +613,13 @@ const EditFlow = () => {
           {saving ? 'Saving...' : 'Update Chart'}
         </button>
       </div>
+
+      <PersonEditDialog
+        person={editingPerson}
+        isOpen={isEditDialogOpen}
+        onSave={handleSaveEditedPerson}
+        onCancel={handleCancelEdit}
+      />
     </div>
   );
 };

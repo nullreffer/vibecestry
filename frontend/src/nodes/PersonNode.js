@@ -2,12 +2,18 @@ import React, { useState } from 'react';
 import { Handle, Position } from 'react-flow-renderer';
 import './PersonNode.css';
 
-const PersonNode = ({ data, id, onAddPerson }) => {
+const PersonNode = ({ data, id }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleAddPerson = (direction) => {
-    if (onAddPerson) {
-      onAddPerson(id, direction);
+    if (data.onAddPerson) {
+      data.onAddPerson(id, direction);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (data.onEdit) {
+      data.onEdit(id, data);
     }
   };
 
@@ -16,6 +22,7 @@ const PersonNode = ({ data, id, onAddPerson }) => {
       className="person-node"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onDoubleClick={handleDoubleClick}
     >
       {/* Connection Handles */}
       <Handle
