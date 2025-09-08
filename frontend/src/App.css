@@ -1,35 +1,155 @@
 .App {
-  text-align: center;
+  background-color: #1a1a1a;
+  min-height: 100vh;
+  color: #ffffff;
 }
 
-.App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-}
-
-.App-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-.react-flow__node-default {
-  background: #fff;
-  border: 1px solid #1a192b;
-  border-radius: 3px;
-  color: #222;
-  font-size: 12px;
-  padding: 10px;
-  text-align: center;
-  width: 150px;
+/* Global dark theme styles for React Flow */
+.react-flow__node {
+  background: #2d2d2d !important;
+  border: 1px solid #404040 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .react-flow__node-input {
-  background: #6ede87;
-  color: #fff;
+  background: #6ede87 !important;
+  color: #1a1a1a !important;
+  border-color: #6ede87 !important;
+  font-weight: 600 !important;
 }
 
 .react-flow__node-output {
-  background: #6865a5;
-  color: #fff;
+  background: #6865a5 !important;
+  color: #ffffff !important;
+  border-color: #6865a5 !important;
+  font-weight: 600 !important;
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #6ede87 !important;
+}
+
+.react-flow__node:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.react-flow__edge-path {
+  stroke: #6ede87 !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #5cc76f !important;
+  stroke-width: 3px !important;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.react-flow__connection-line {
+  stroke: #6ede87 !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 5,5 !important;
+}
+
+.react-flow__handle {
+  background: #6ede87 !important;
+  border: 2px solid #1a1a1a !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.react-flow__handle.connecting {
+  background: #5cc76f !important;
+  transform: scale(1.3) !important;
+}
+
+/* Controls styling */
+.react-flow__controls {
+  background: #2d2d2d !important;
+  border: 1px solid #404040 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__controls-button {
+  background: #2d2d2d !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #404040 !important;
+}
+
+.react-flow__controls-button svg {
+  fill: #ffffff !important;
+}
+
+/* MiniMap styling */
+.react-flow__minimap {
+  background: #2d2d2d !important;
+  border: 1px solid #404040 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Attribution styling */
+.react-flow__attribution {
+  background: rgba(45, 45, 45, 0.8) !important;
+  color: #cccccc !important;
+  border-radius: 4px !important;
+}
+
+.react-flow__attribution a {
+  color: #6ede87 !important;
+}
+
+/* Panel styling */
+.react-flow__panel {
+  color: #ffffff !important;
+}
+
+/* Selection styling */
+.react-flow__selection {
+  background: rgba(110, 222, 135, 0.1) !important;
+  border: 1px solid #6ede87 !important;
+}
+
+/* Resize control styling */
+.react-flow__resize-control {
+  background: #6ede87 !important;
+  border: 1px solid #1a1a1a !important;
+}
+
+/* Node toolbar styling */
+.react-flow__node-toolbar {
+  background: #2d2d2d !important;
+  border: 1px solid #404040 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__node-toolbar button {
+  background: #404040 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  margin: 2px !important;
+}
+
+.react-flow__node-toolbar button:hover {
+  background: #505050 !important;
 }
