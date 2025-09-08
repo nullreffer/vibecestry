@@ -80,6 +80,8 @@
   padding: 15px 20px;
   background-color: #333333;
   border-bottom: 1px solid #404040;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .add-node-button {
@@ -101,6 +103,19 @@
 .node-count {
   color: #cccccc;
   font-size: 0.9rem;
+}
+
+.instructions {
+  color: #6ede87;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.instructions span {
+  background-color: rgba(110, 222, 135, 0.1);
+  padding: 5px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(110, 222, 135, 0.3);
 }
 
 .flow-canvas {

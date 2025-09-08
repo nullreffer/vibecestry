@@ -1,0 +1,252 @@
+.person-node {
+  position: relative;
+  background: #2d2d2d;
+  border: 2px solid #404040;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 200px;
+  min-height: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.person-node:hover {
+  border-color: #6ede87;
+  box-shadow: 0 6px 20px rgba(110, 222, 135, 0.2);
+  transform: translateY(-2px);
+}
+
+.person-content {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.person-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #404040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.person-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.person-initials {
+  color: #6ede87;
+  font-weight: bold;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.person-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.person-name {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.3;
+  margin-bottom: 6px;
+  word-wrap: break-word;
+}
+
+.person-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.birth-date,
+.death-date {
+  color: #cccccc;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.person-location {
+  color: #999999;
+  font-size: 11px;
+  line-height: 1.2;
+  font-style: italic;
+}
+
+/* Connection Handles */
+.person-handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: #6ede87 !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 50% !important;
+}
+
+.person-handle:hover {
+  background: #5cc76f !important;
+  transform: scale(1.2) !important;
+}
+
+/* Action Buttons */
+.action-buttons {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.action-button {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  background: #6ede87;
+  border: 2px solid #1a1a1a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #1a1a1a;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.action-button:hover {
+  background: #5cc76f;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(110, 222, 135, 0.4);
+}
+
+.action-button:active {
+  transform: scale(0.95);
+}
+
+/* Position action buttons around the node */
+.add-parent {
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.add-parent:hover {
+  transform: translateX(-50%) scale(1.1);
+}
+
+.add-spouse-left {
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.add-spouse-left:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.add-spouse-right {
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.add-spouse-right:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.add-child {
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.add-child:hover {
+  transform: translateX(-50%) scale(1.1);
+}
+
+/* Male/Female variants */
+.person-node.male {
+  border-color: #4a90e2;
+}
+
+.person-node.male:hover {
+  border-color: #6bb3ff;
+  box-shadow: 0 6px 20px rgba(74, 144, 226, 0.2);
+}
+
+.person-node.female {
+  border-color: #e24a90;
+}
+
+.person-node.female:hover {
+  border-color: #ff6bb3;
+  box-shadow: 0 6px 20px rgba(226, 74, 144, 0.2);
+}
+
+/* Selected state */
+.person-node.selected {
+  border-color: #6ede87 !important;
+  box-shadow: 0 0 0 3px rgba(110, 222, 135, 0.3) !important;
+}
+
+/* Compact mode for smaller screens */
+@media (max-width: 768px) {
+  .person-node {
+    min-width: 160px;
+    min-height: 100px;
+    padding: 12px;
+  }
+
+  .person-photo {
+    width: 50px;
+    height: 50px;
+  }
+
+  .person-initials {
+    font-size: 20px;
+  }
+
+  .person-name {
+    font-size: 14px;
+  }
+
+  .birth-date,
+  .death-date {
+    font-size: 11px;
+  }
+
+  .person-location {
+    font-size: 10px;
+  }
+
+  .action-button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .add-parent,
+  .add-child {
+    top: -42px;
+  }
+
+  .add-child {
+    bottom: -42px;
+    top: auto;
+  }
+
+  .add-spouse-left {
+    left: -42px;
+  }
+
+  .add-spouse-right {
+    right: -42px;
+  }
+}

@@ -8,7 +8,17 @@ import ReactFlow, {
   Controls,
   MiniMap,
 } from 'react-flow-renderer';
+import PersonNode from '../nodes/PersonNode';
+import MaleNode from '../nodes/MaleNode';
+import FemaleNode from '../nodes/FemaleNode';
 import './EditFlow.css';
+
+// Custom node types for ancestry
+const nodeTypes = {
+  person: PersonNode,
+  male: MaleNode,
+  female: FemaleNode,
+};
 
 const EditFlow = () => {
   const { id } = useParams();
@@ -20,9 +30,11 @@ const EditFlow = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [nodeIdCounter, setNodeIdCounter] = useState(5);
 
   useEffect(() => {
     loadFlow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadFlow = async () => {
@@ -32,78 +44,146 @@ const EditFlow = () => {
       const mockFlowData = {
         '1': {
           id: '1',
-          name: 'Sample Flow 1',
-          description: 'A sample flow for demonstration',
+          name: 'Smith Family Tree',
+          description: 'A multi-generational family tree',
           nodes: [
             {
               id: '1',
-              type: 'input',
-              data: { label: 'Start Node' },
-              position: { x: 250, y: 25 },
+              type: 'male',
+              data: { 
+                name: 'John Smith',
+                birthDate: '1965-03-15',
+                location: 'Boston, MA'
+              },
+              position: { x: 400, y: 200 },
             },
             {
               id: '2',
-              data: { label: 'Process Data' },
-              position: { x: 100, y: 125 },
+              type: 'female',
+              data: { 
+                name: 'Mary Johnson',
+                birthDate: '1967-08-22',
+                location: 'Boston, MA'
+              },
+              position: { x: 650, y: 200 },
             },
             {
               id: '3',
-              data: { label: 'Validate' },
-              position: { x: 400, y: 125 },
+              type: 'male',
+              data: { 
+                name: 'Robert Smith',
+                birthDate: '1940-12-05',
+                location: 'New York, NY'
+              },
+              position: { x: 400, y: 50 },
             },
             {
               id: '4',
-              type: 'output',
-              data: { label: 'End Node' },
-              position: { x: 250, y: 225 },
+              type: 'female',
+              data: { 
+                name: 'Emily Davis',
+                birthDate: '1992-05-10',
+                location: 'Boston, MA'
+              },
+              position: { x: 525, y: 350 },
             },
           ],
           edges: [
-            { id: 'e1-2', source: '1', target: '2', animated: true },
-            { id: 'e1-3', source: '1', target: '3', animated: true },
-            { id: 'e2-4', source: '2', target: '4', animated: true },
-            { id: 'e3-4', source: '3', target: '4', animated: true },
+            { 
+              id: 'e1-2', 
+              source: '1', 
+              target: '2', 
+              type: 'straight',
+              style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
+            },
+            { 
+              id: 'e3-1', 
+              source: '3', 
+              target: '1', 
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#6ede87', strokeWidth: 2 }
+            },
+            { 
+              id: 'e1-4', 
+              source: '1', 
+              target: '4', 
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#6ede87', strokeWidth: 2 }
+            },
           ],
         },
         '2': {
           id: '2',
-          name: 'Data Processing Flow',
-          description: 'Flow for processing user data',
+          name: 'Johnson Ancestry',
+          description: 'Historical family lineage',
           nodes: [
             {
               id: '1',
-              type: 'input',
-              data: { label: 'Input Data' },
-              position: { x: 100, y: 50 },
-            },
-            {
-              id: '2',
-              data: { label: 'Clean Data' },
-              position: { x: 300, y: 50 },
-            },
-            {
-              id: '3',
-              data: { label: 'Transform' },
-              position: { x: 500, y: 50 },
-            },
-            {
-              id: '4',
-              data: { label: 'Validate' },
+              type: 'female',
+              data: { 
+                name: 'Sarah Johnson',
+                birthDate: '1945-11-30',
+                location: 'Chicago, IL'
+              },
               position: { x: 300, y: 150 },
             },
             {
-              id: '5',
-              type: 'output',
-              data: { label: 'Output' },
-              position: { x: 500, y: 150 },
+              id: '2',
+              type: 'male',
+              data: { 
+                name: 'Michael Thompson',
+                birthDate: '1970-07-18',
+                location: 'Chicago, IL'
+              },
+              position: { x: 300, y: 300 },
+            },
+            {
+              id: '3',
+              type: 'female',
+              data: { 
+                name: 'Lisa Anderson',
+                birthDate: '1972-02-14',
+                location: 'Milwaukee, WI'
+              },
+              position: { x: 550, y: 300 },
+            },
+            {
+              id: '4',
+              type: 'male',
+              data: { 
+                name: 'James Thompson',
+                birthDate: '2000-09-05',
+                location: 'Chicago, IL'
+              },
+              position: { x: 425, y: 450 },
             },
           ],
           edges: [
-            { id: 'e1-2', source: '1', target: '2', animated: true },
-            { id: 'e2-3', source: '2', target: '3', animated: true },
-            { id: 'e2-4', source: '2', target: '4', animated: true },
-            { id: 'e3-5', source: '3', target: '5', animated: true },
-            { id: 'e4-5', source: '4', target: '5', animated: true },
+            { 
+              id: 'e1-2', 
+              source: '1', 
+              target: '2', 
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#6ede87', strokeWidth: 2 }
+            },
+            { 
+              id: 'e2-3', 
+              source: '2', 
+              target: '3', 
+              type: 'straight',
+              style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
+            },
+            { 
+              id: 'e2-4', 
+              source: '2', 
+              target: '4', 
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#6ede87', strokeWidth: 2 }
+            },
           ],
         }
       };
@@ -142,16 +222,122 @@ const EditFlow = () => {
     [setEdges]
   );
 
+  // Function to generate new person data
+  const generatePersonData = (relationship) => {
+    const names = {
+      parent: ['Robert Smith', 'Mary Johnson', 'David Wilson', 'Sarah Brown'],
+      child: ['Emma Doe', 'Michael Doe', 'Sofia Doe', 'James Doe'],
+      spouse: ['Jane Smith', 'Lisa Johnson', 'Anna Wilson', 'Kate Brown']
+    };
+    
+    const relationshipNames = names[relationship] || names.parent;
+    const randomName = relationshipNames[Math.floor(Math.random() * relationshipNames.length)];
+    
+    return {
+      name: randomName,
+      birthDate: `${Math.floor(Math.random() * 50) + 1950}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+      location: ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX'][Math.floor(Math.random() * 4)]
+    };
+  };
+
+  // Function to calculate position for new nodes
+  const calculateNewPosition = (sourceNodeId, direction) => {
+    const sourceNode = nodes.find(n => n.id === sourceNodeId);
+    if (!sourceNode) return { x: 200, y: 200 };
+
+    const { x, y } = sourceNode.position;
+    const offset = 250;
+
+    switch (direction) {
+      case 'parent':
+        return { x, y: y - offset };
+      case 'child':
+        return { x, y: y + offset };
+      case 'spouse-left':
+        return { x: x - offset, y };
+      case 'spouse-right':
+        return { x: x + offset, y };
+      default:
+        return { x, y };
+    }
+  };
+
+  // Function to handle adding new person
+  const handleAddPerson = useCallback((sourceNodeId, direction) => {
+    const newNodeId = String(nodeIdCounter);
+    const newPosition = calculateNewPosition(sourceNodeId, direction);
+    const personData = generatePersonData(direction === 'spouse-left' || direction === 'spouse-right' ? 'spouse' : direction);
+    
+    // Determine node type based on relationship and random gender
+    const nodeType = Math.random() > 0.5 ? 'male' : 'female';
+    
+    const newNode = {
+      id: newNodeId,
+      type: nodeType,
+      data: personData,
+      position: newPosition,
+    };
+
+    // Add the new node
+    setNodes((nds) => nds.concat(newNode));
+    
+    // Create connection between nodes
+    let newEdge;
+    switch (direction) {
+      case 'parent':
+        newEdge = {
+          id: `e${newNodeId}-${sourceNodeId}`,
+          source: newNodeId,
+          target: sourceNodeId,
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: '#6ede87', strokeWidth: 2 }
+        };
+        break;
+      case 'child':
+        newEdge = {
+          id: `e${sourceNodeId}-${newNodeId}`,
+          source: sourceNodeId,
+          target: newNodeId,
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: '#6ede87', strokeWidth: 2 }
+        };
+        break;
+      case 'spouse-left':
+      case 'spouse-right':
+        newEdge = {
+          id: `e${sourceNodeId}-${newNodeId}`,
+          source: sourceNodeId,
+          target: newNodeId,
+          type: 'straight',
+          animated: false,
+          style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
+        };
+        break;
+      default:
+        break;
+    }
+
+    if (newEdge) {
+      setEdges((eds) => eds.concat(newEdge));
+    }
+
+    setNodeIdCounter(prev => prev + 1);
+  }, [nodes, nodeIdCounter]);
+
   const addNode = () => {
     const newNode = {
-      id: `${Date.now()}`,
-      data: { label: `Node ${nodes.length + 1}` },
+      id: String(nodeIdCounter),
+      type: Math.random() > 0.5 ? 'male' : 'female',
+      data: generatePersonData('parent'),
       position: { 
         x: Math.random() * 400 + 100, 
         y: Math.random() * 400 + 100 
       },
     };
     setNodes((nds) => nds.concat(newNode));
+    setNodeIdCounter(prev => prev + 1);
   };
 
   const handleSave = async () => {
@@ -172,16 +358,16 @@ const EditFlow = () => {
         updatedAt: new Date().toISOString()
       };
 
-      console.log('Updating flow:', flowData);
+      console.log('Updating ancestry chart:', flowData);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      alert('Flow updated successfully!');
+      alert('Ancestry chart updated successfully!');
       navigate('/');
     } catch (error) {
-      console.error('Error updating flow:', error);
-      alert('Failed to update flow. Please try again.');
+      console.error('Error updating ancestry chart:', error);
+      alert('Failed to update ancestry chart. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -194,19 +380,19 @@ const EditFlow = () => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this flow? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to delete this ancestry chart? This action cannot be undone.')) {
       try {
         // Here you would make an API call to delete the flow
-        console.log('Deleting flow:', id);
+        console.log('Deleting ancestry chart:', id);
         
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        alert('Flow deleted successfully!');
+        alert('Ancestry chart deleted successfully!');
         navigate('/');
       } catch (error) {
-        console.error('Error deleting flow:', error);
-        alert('Failed to delete flow. Please try again.');
+        console.error('Error deleting ancestry chart:', error);
+        alert('Failed to delete ancestry chart. Please try again.');
       }
     }
   };
@@ -214,7 +400,7 @@ const EditFlow = () => {
   if (loading) {
     return (
       <div className="edit-flow-container">
-        <div className="loading">Loading flow...</div>
+        <div className="loading">Loading ancestry chart...</div>
       </div>
     );
   }
@@ -226,7 +412,7 @@ const EditFlow = () => {
           <h2>Error</h2>
           <p>{error}</p>
           <button onClick={() => navigate('/')} className="back-button">
-            Back to Flow List
+            Back to Chart List
           </button>
         </div>
       </div>
@@ -236,20 +422,20 @@ const EditFlow = () => {
   return (
     <div className="edit-flow-container">
       <div className="page-header">
-        <h1>Edit Flow</h1>
-        <p>Modify your workflow using the interactive editor</p>
+        <h1>Edit Ancestry Chart</h1>
+        <p>Modify your family tree. Hover over people to add family members.</p>
       </div>
 
       <div className="flow-form">
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="flowName">Flow Name *</label>
+            <label htmlFor="flowName">Chart Name *</label>
             <input
               id="flowName"
               type="text"
               value={flowName}
               onChange={(e) => setFlowName(e.target.value)}
-              placeholder="Enter flow name"
+              placeholder="Enter chart name"
               className="form-input"
             />
           </div>
@@ -260,7 +446,7 @@ const EditFlow = () => {
               type="text"
               value={flowDescription}
               onChange={(e) => setFlowDescription(e.target.value)}
-              placeholder="Enter flow description"
+              placeholder="Enter chart description"
               className="form-input"
             />
           </div>
@@ -271,33 +457,52 @@ const EditFlow = () => {
         <div className="editor-toolbar">
           <div className="toolbar-left">
             <button onClick={addNode} className="add-node-button">
-              + Add Node
+              + Add Person
             </button>
             <div className="node-count">
-              Nodes: {nodes.length} | Edges: {edges.length}
+              People: {nodes.length} | Relationships: {edges.length}
+            </div>
+          </div>
+          <div className="toolbar-center">
+            <div className="instructions">
+              <span>💡 Hover over a person to add family members</span>
             </div>
           </div>
           <div className="toolbar-right">
             <button onClick={handleDelete} className="delete-flow-button">
-              🗑️ Delete Flow
+              🗑️ Delete Chart
             </button>
           </div>
         </div>
 
         <div className="flow-canvas">
           <ReactFlow
-            nodes={nodes}
+            nodes={nodes.map(node => ({
+              ...node,
+              data: {
+                ...node.data,
+                onAddPerson: handleAddPerson
+              }
+            }))}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            nodeTypes={nodeTypes}
             fitView
             style={{ background: '#1a1a1a' }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
           >
             <Controls style={{ background: '#2d2d2d', fill: '#ffffff' }} />
             <MiniMap 
               style={{ background: '#2d2d2d' }}
-              nodeColor="#6ede87"
+              nodeColor={(node) => {
+                switch(node.type) {
+                  case 'male': return '#4a90e2';
+                  case 'female': return '#e24a90';
+                  default: return '#6ede87';
+                }
+              }}
               maskColor="rgba(255, 255, 255, 0.1)"
             />
             <Background 
@@ -323,7 +528,7 @@ const EditFlow = () => {
           className="save-button"
           disabled={saving || !flowName.trim()}
         >
-          {saving ? 'Saving...' : 'Update Flow'}
+          {saving ? 'Saving...' : 'Update Chart'}
         </button>
       </div>
     </div>
