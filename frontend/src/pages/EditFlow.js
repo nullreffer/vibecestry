@@ -420,6 +420,20 @@ const EditFlow = () => {
     setEditingPerson(null);
   }, []);
 
+  // Handle deleting a person
+  const handleDeletePerson = useCallback((personId) => {
+    if (window.confirm('Are you sure you want to delete this person?')) {
+      setNodes((nds) => nds.filter(node => node.id !== personId));
+      setEdges((eds) => eds.filter(edge => edge.source !== personId && edge.target !== personId));
+    }
+  }, [setNodes, setEdges]);
+
+  // Handle linking persons (for future implementation)
+  const handleLinkPerson = useCallback((personId, relationship) => {
+    // TODO: Implement linking functionality
+    alert(`Link ${relationship} functionality coming soon!`);
+  }, []);
+
   const handleSave = async () => {
     if (!flowName.trim()) {
       alert('Please enter a flow name');
@@ -562,7 +576,9 @@ const EditFlow = () => {
               data: {
                 ...node.data,
                 onAddPerson: handleAddPerson,
-                onEdit: handleEditPerson
+                onEdit: handleEditPerson,
+                onDelete: handleDeletePerson,
+                onLink: handleLinkPerson
               }
             }))}
             edges={edges}
@@ -574,6 +590,10 @@ const EditFlow = () => {
             fitView
             style={{ background: '#1a1a1a' }}
             defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+            onPaneClick={() => {
+              // Close any open action panels by triggering a re-render
+              setNodes(nodes => [...nodes]);
+            }}
           >
             <Controls style={{ background: '#2d2d2d', fill: '#ffffff' }} />
             <MiniMap 
