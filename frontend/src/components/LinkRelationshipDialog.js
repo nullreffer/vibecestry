@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
+import { getRelationshipOptions, RELATIONSHIP_TYPES } from '../constants/relationships';
 import './PersonEditDialog.css';
 
 const LinkRelationshipDialog = ({ isOpen, onSave, onCancel, sourcePerson, targetPerson }) => {
-  const [relationshipType, setRelationshipType] = useState('biological-parent');
+  const [relationshipType, setRelationshipType] = useState(RELATIONSHIP_TYPES.BIOLOGICAL_PARENT);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(relationshipType);
-    setRelationshipType('biological-parent');
+    setRelationshipType(RELATIONSHIP_TYPES.BIOLOGICAL_PARENT);
   };
 
   const handleCancel = () => {
-    setRelationshipType('biological-parent');
+    setRelationshipType(RELATIONSHIP_TYPES.BIOLOGICAL_PARENT);
     onCancel();
   };
 
@@ -49,11 +50,11 @@ const LinkRelationshipDialog = ({ isOpen, onSave, onCancel, sourcePerson, target
                 onChange={(e) => setRelationshipType(e.target.value)}
                 required
               >
-                <option value="biological-parent">{sourcePerson?.name} is {targetPerson?.name}'s Biological Parent</option>
-                <option value="biological-child">{sourcePerson?.name} is {targetPerson?.name}'s Biological Child</option>
-                <option value="adopted-parent">{sourcePerson?.name} is {targetPerson?.name}'s Adopted Parent</option>
-                <option value="adopted-child">{sourcePerson?.name} is {targetPerson?.name}'s Adopted Child</option>
-                <option value="spouse">{sourcePerson?.name} is {targetPerson?.name}'s Spouse</option>
+                {getRelationshipOptions().map(option => (
+                  <option key={option.value} value={option.value}>
+                    {sourcePerson?.name} is {targetPerson?.name}'s {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 

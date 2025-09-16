@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { getRelationshipOptions, RELATIONSHIP_TYPES } from '../constants/relationships';
 import './PersonEditDialog.css';
 
 const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     biologicalSex: 'male',
-    relationshipType: 'biological-parent',
+    relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT,
     birthDate: '',
     deathDate: '',
     location: '',
@@ -27,7 +28,7 @@ const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
     setFormData({
       name: '',
       biologicalSex: 'male',
-      relationshipType: 'biological-parent',
+      relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT,
       birthDate: '',
       deathDate: '',
       location: '',
@@ -41,7 +42,7 @@ const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
     setFormData({
       name: '',
       biologicalSex: 'male',
-      relationshipType: 'biological-parent',
+      relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT,
       birthDate: '',
       deathDate: '',
       location: '',
@@ -96,11 +97,11 @@ const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
                 onChange={(e) => handleInputChange('relationshipType', e.target.value)}
                 required
               >
-                <option value="biological-parent">Biological Parent</option>
-                <option value="biological-child">Biological Child</option>
-                <option value="adopted-parent">Adopted Parent</option>
-                <option value="adopted-child">Adopted Child</option>
-                <option value="spouse">Spouse</option>
+                {getRelationshipOptions().map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 

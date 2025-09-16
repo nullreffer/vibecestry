@@ -1,24 +1,90 @@
 const express = require('express');
 const router = express.Router();
 
-// Sample data for demonstration
+// Sample family tree data for demonstration
 let flowData = {
   nodes: [
     {
       id: '1',
-      type: 'input',
-      data: { label: 'API Node 1' },
-      position: { x: 250, y: 25 },
+      type: 'person',
+      position: { x: 400, y: 300 },
+      data: {
+        name: 'John Doe',
+        biologicalSex: 'male',
+        birthDate: '1950-01-15',
+        deathDate: '',
+        location: 'New York, NY',
+        occupation: 'Engineer',
+        notes: 'Family patriarch',
+        onEdit: () => {},
+        onDelete: () => {},
+        onAddRelative: () => {},
+        onLink: () => {}
+      }
     },
     {
       id: '2',
-      data: { label: 'API Node 2' },
-      position: { x: 100, y: 125 },
+      type: 'person',
+      position: { x: 600, y: 300 },
+      data: {
+        name: 'Jane Smith',
+        biologicalSex: 'female',
+        birthDate: '1952-03-22',
+        deathDate: '',
+        location: 'New York, NY',
+        occupation: 'Teacher',
+        notes: 'Loving mother',
+        onEdit: () => {},
+        onDelete: () => {},
+        onAddRelative: () => {},
+        onLink: () => {}
+      }
     },
+    {
+      id: '3',
+      type: 'person',
+      position: { x: 500, y: 150 },
+      data: {
+        name: 'Robert Doe',
+        biologicalSex: 'male',
+        birthDate: '1975-07-10',
+        deathDate: '',
+        location: 'Boston, MA',
+        occupation: 'Doctor',
+        notes: 'Eldest son',
+        onEdit: () => {},
+        onDelete: () => {},
+        onAddRelative: () => {},
+        onLink: () => {}
+      }
+    }
   ],
   edges: [
-    { id: 'e1-2', source: '1', target: '2' },
-  ],
+    {
+      id: 'e1-2',
+      source: '1',
+      target: '2',
+      type: 'relationship',
+      data: { label: 'Spouse', relationshipType: 'spouse' },
+      style: { stroke: '#ff69b4', strokeWidth: 2, strokeDasharray: '3,3' }
+    },
+    {
+      id: 'e1-3',
+      source: '1',
+      target: '3',
+      type: 'relationship',
+      data: { label: 'Father', relationshipType: 'biological-parent' },
+      style: { stroke: '#6ede87', strokeWidth: 2, strokeDasharray: 'none' }
+    },
+    {
+      id: 'e2-3',
+      source: '2',
+      target: '3',
+      type: 'relationship',
+      data: { label: 'Mother', relationshipType: 'biological-parent' },
+      style: { stroke: '#6ede87', strokeWidth: 2, strokeDasharray: 'none' }
+    }
+  ]
 };
 
 // GET /api/flow - Get flow data

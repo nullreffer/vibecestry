@@ -13,6 +13,7 @@ import PersonEditDialog from '../components/PersonEditDialog';
 import AddRelativeDialog from '../components/AddRelativeDialog';
 import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
+import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship } from '../constants/relationships';
 import './EditFlow.css';
 
 // Custom node types for ancestry
@@ -476,25 +477,9 @@ const EditFlow = () => {
   // Handle saving link relationship
   const handleSaveLinkRelationship = useCallback((relationshipType) => {
     if (linkingSourceId && linkingTargetId) {
-      // Determine edge styling based on relationship type
-      let edgeStyle = { strokeWidth: 2 };
-      let edgeLabel = relationshipType;
-
-      switch (relationshipType) {
-        case 'Biological Parent':
-        case 'Biological Child':
-          edgeStyle = { stroke: '#6ede87', strokeWidth: 2, strokeDasharray: 'none' };
-          break;
-        case 'Adopted Parent':
-        case 'Adopted Child':
-          edgeStyle = { stroke: '#ffa500', strokeWidth: 2, strokeDasharray: '5,5' };
-          break;
-        case 'Spouse':
-          edgeStyle = { stroke: '#e24a90', strokeWidth: 2, strokeDasharray: '3,3' };
-          break;
-        default:
-          edgeStyle = { stroke: '#6ede87', strokeWidth: 2, strokeDasharray: 'none' };
-      }
+      // Get edge styling based on relationship type using constants
+      const edgeStyle = getEdgeStyleForRelationship(relationshipType);
+      const edgeLabel = relationshipType;
 
       // Create relationship edge between the two nodes
       const newEdge = {

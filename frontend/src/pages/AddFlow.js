@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactFlow, {
   Controls,
@@ -11,6 +11,7 @@ import ReactFlow, {
 import PersonNode from '../nodes/PersonNode';
 import PersonEditDialog from '../components/PersonEditDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
+import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship } from '../constants/relationships';
 import './AddFlow.css';
 
 const nodeTypes = {
@@ -21,32 +22,85 @@ const edgeTypes = {
   relationship: RelationshipEdge,
 };
 
-const initialNodes = [
-  {
-    id: '1',
-    type: 'person',
-    position: { x: 400, y: 300 },
-    data: { 
-      name: 'Start Person',
-      biologicalSex: 'male',
-      birthDate: '',
-      deathDate: '',
-      location: '',
-      occupation: '',
-      notes: ''
-    },
-  },
-];
-
-const initialEdges = [];
-
 const AddFlow = () => {
   const navigate = useNavigate();
   const [flowName, setFlowName] = useState('');
   const [flowDescription, setFlowDescription] = useState('');
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load initial data from API
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const response = await fetch('/api/flow');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Clean the node data to remove function references for React Flow
+          const cleanNodes = result.data.nodes.map(node => ({
+            ...node,
+            data: {
+              ...node.data,
+              // Remove function references, they'll be added back by the node mapping
+              onEdit: undefined,
+              onDelete: undefined,
+              onAddRelative: undefined,
+              onLink: undefined
+            }
+          }));
+          
+          setNodes(cleanNodes);
+          setEdges(result.data.edges || []);
+        } else {
+          // Fallback to default starter node if API fails
+          setNodes([
+            {
+              id: '1',
+              type: 'person',
+              position: { x: 400, y: 300 },
+              data: { 
+                name: 'Start Person',
+                biologicalSex: 'male',
+                birthDate: '',
+                deathDate: '',
+                location: '',
+                occupation: '',
+                notes: ''
+              },
+            }
+          ]);
+          setEdges([]);
+        }
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+        // Fallback to default starter node
+        setNodes([
+          {
+            id: '1',
+            type: 'person',
+            position: { x: 400, y: 300 },
+            data: { 
+              name: 'Start Person',
+              biologicalSex: 'male',
+              birthDate: '',
+              deathDate: '',
+              location: '',
+              occupation: '',
+              notes: ''
+            },
+          }
+        ]);
+        setEdges([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, [setNodes, setEdges]);
   const [editingPerson, setEditingPerson] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLinkingMode, setIsLinkingMode] = useState(false);
@@ -104,11 +158,12 @@ const AddFlow = () => {
     
     const baseY = CENTER_X + (generation * GENERATION_HEIGHT);
     
-    if (direction === 'spouse-left' || direction === 'spouse-right') {
+    if (direction === RELATIONSHIP_TYPES.SPOUSE) {
       // For spouses, place them at the same generation level
-      const offset = direction === 'spouse-left' ? -HORIZONTAL_SPACING : HORIZONTAL_SPACING;
+      // Determine offset based on available space or existing spouse positions
+      const spouseOffset = parentNode.position.x > CENTER_X ? -HORIZONTAL_SPACING : HORIZONTAL_SPACING;
       return {
-        x: parentNode.position.x + offset,
+        x: parentNode.position.x + spouseOffset,
         y: baseY
       };
     }
@@ -145,8 +200,7 @@ const AddFlow = () => {
       case 'child':
         // Source is parent, target is child
         return targetGender === 'male' ? 'Son' : targetGender === 'female' ? 'Daughter' : 'Child';
-      case 'spouse-left':
-      case 'spouse-right':
+      case RELATIONSHIP_TYPES.SPOUSE:
         // Marriage relationship
         if (sourceGender === 'male' && targetGender === 'female') return 'Husband';
         if (sourceGender === 'female' && targetGender === 'male') return 'Wife';
@@ -173,8 +227,7 @@ const AddFlow = () => {
       case 'child':
         newGeneration = parentGeneration - 1;
         break;
-      case 'spouse-left':
-      case 'spouse-right':
+      case RELATIONSHIP_TYPES.SPOUSE:
         newGeneration = parentGeneration;
         break;
       default:
@@ -220,20 +273,21 @@ const AddFlow = () => {
           style: { stroke: '#6ede87', strokeWidth: 2 }
         };
         break;
-      case 'spouse-left':
-      case 'spouse-right':
+      case RELATIONSHIP_TYPES.SPOUSE:
+        // Determine handle positions based on relative positions
+        const sourceOnLeft = newPosition.x < parentNode.position.x;
         edgeConfig = {
           id: `edge-${newId}-${parentId}`,
           source: newId,
           target: parentId,
-          sourceHandle: direction === 'spouse-left' ? 'right' : 'left',
-          targetHandle: direction === 'spouse-left' ? 'left' : 'right',
+          sourceHandle: sourceOnLeft ? 'right' : 'left',
+          targetHandle: sourceOnLeft ? 'left' : 'right',
           type: 'relationship',
           data: { 
-            label: getRelationshipLabel(direction, newPersonGender, parentGender),
-            relationshipType: 'spouse'
+            label: getRelationshipLabel(RELATIONSHIP_TYPES.SPOUSE, newPersonGender, parentGender),
+            relationshipType: RELATIONSHIP_TYPES.SPOUSE
           },
-          style: { stroke: '#e24a90', strokeWidth: 2, strokeDasharray: '5,5' }
+          style: getEdgeStyleForRelationship(RELATIONSHIP_TYPES.SPOUSE)
         };
         break;
     }
@@ -274,22 +328,22 @@ const AddFlow = () => {
     
     // Map relationship type to direction
     switch (relativeData.relationshipType) {
-      case 'biological-parent':
-      case 'adopted-parent':
+      case RELATIONSHIP_TYPES.BIOLOGICAL_PARENT:
+      case RELATIONSHIP_TYPES.ADOPTED_PARENT:
         direction = 'parent';
         newGeneration = parentGeneration + 1;
         break;
-      case 'biological-child':
-      case 'adopted-child':
+      case RELATIONSHIP_TYPES.BIOLOGICAL_CHILD:
+      case RELATIONSHIP_TYPES.ADOPTED_CHILD:
         direction = 'child';
         newGeneration = parentGeneration - 1;
         break;
-      case 'spouse':
-        direction = 'spouse-right';
+      case RELATIONSHIP_TYPES.SPOUSE:
+        direction = RELATIONSHIP_TYPES.SPOUSE;
         newGeneration = parentGeneration;
         break;
       default:
-        direction = 'spouse-right';
+        direction = RELATIONSHIP_TYPES.SPOUSE;
         newGeneration = parentGeneration;
     }
     
@@ -315,15 +369,11 @@ const AddFlow = () => {
             label: getRelationshipLabel('parent', newPersonGender, parentGender),
             relationshipType: relativeData.relationshipType
           },
-          style: { 
-            stroke: relativeData.relationshipType === 'adopted-parent' ? '#ffa500' : '#6ede87', 
-            strokeWidth: 2,
-            strokeDasharray: relativeData.relationshipType === 'adopted-parent' ? '3,3' : 'none'
-          }
+          style: getEdgeStyleForRelationship(relativeData.relationshipType)
         };
         break;
-      case 'biological-child':
-      case 'adopted-child':
+      case RELATIONSHIP_TYPES.BIOLOGICAL_CHILD:
+      case RELATIONSHIP_TYPES.ADOPTED_CHILD:
         edgeConfig = {
           id: `edge-${parentId}-${newId}`,
           source: parentId,
@@ -335,14 +385,10 @@ const AddFlow = () => {
             label: getRelationshipLabel('child', parentGender, newPersonGender),
             relationshipType: relativeData.relationshipType
           },
-          style: { 
-            stroke: relativeData.relationshipType === 'adopted-child' ? '#ffa500' : '#6ede87', 
-            strokeWidth: 2,
-            strokeDasharray: relativeData.relationshipType === 'adopted-child' ? '3,3' : 'none'
-          }
+          style: getEdgeStyleForRelationship(relativeData.relationshipType)
         };
         break;
-      case 'spouse':
+      case RELATIONSHIP_TYPES.SPOUSE:
         edgeConfig = {
           id: `edge-${newId}-${parentId}`,
           source: newId,
@@ -351,10 +397,10 @@ const AddFlow = () => {
           targetHandle: 'right',
           type: 'relationship',
           data: { 
-            label: getRelationshipLabel('spouse', newPersonGender, parentGender),
-            relationshipType: 'spouse'
+            label: getRelationshipLabel(RELATIONSHIP_TYPES.SPOUSE, newPersonGender, parentGender),
+            relationshipType: RELATIONSHIP_TYPES.SPOUSE
           },
-          style: { stroke: '#e24a90', strokeWidth: 2, strokeDasharray: '5,5' }
+          style: getEdgeStyleForRelationship(RELATIONSHIP_TYPES.SPOUSE)
         };
         break;
     }
@@ -581,6 +627,16 @@ const AddFlow = () => {
   const handleCancel = () => {
     navigate('/');
   };
+
+  if (loading) {
+    return (
+      <div className="add-flow-container">
+        <div className="loading-spinner">
+          <p>Loading family tree data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="add-flow-container">
