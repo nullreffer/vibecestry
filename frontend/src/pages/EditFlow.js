@@ -10,6 +10,8 @@ import ReactFlow, {
 } from 'react-flow-renderer';
 import PersonNode from '../nodes/PersonNode';
 import PersonEditDialog from '../components/PersonEditDialog';
+import AddRelativeDialog from '../components/AddRelativeDialog';
+import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import './EditFlow.css';
 
@@ -35,6 +37,14 @@ const EditFlow = () => {
   const [nodeIdCounter, setNodeIdCounter] = useState(5);
   const [editingPerson, setEditingPerson] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isLinkingMode, setIsLinkingMode] = useState(false);
+  const [linkingSourceId, setLinkingSourceId] = useState(null);
+  const [linkingSourceData, setLinkingSourceData] = useState(null);
+  const [linkingTargetId, setLinkingTargetId] = useState(null);
+  const [linkingTargetData, setLinkingTargetData] = useState(null);
+  const [isLinkRelationshipDialogOpen, setIsLinkRelationshipDialogOpen] = useState(false);
+  const [isAddRelativeDialogOpen, setIsAddRelativeDialogOpen] = useState(false);
+  const [addRelativeSource, setAddRelativeSource] = useState(null);
 
   useEffect(() => {
     loadFlow();
@@ -53,41 +63,53 @@ const EditFlow = () => {
           nodes: [
             {
               id: '1',
-              type: 'male',
+              type: 'person',
               data: { 
                 name: 'John Smith',
+                biologicalSex: 'male',
                 birthDate: '1965-03-15',
-                location: 'Boston, MA'
+                location: 'Boston, MA',
+                occupation: 'Engineer',
+                notes: ''
               },
               position: { x: 400, y: 200 },
             },
             {
               id: '2',
-              type: 'female',
+              type: 'person',
               data: { 
                 name: 'Mary Johnson',
+                biologicalSex: 'female',
                 birthDate: '1967-08-22',
-                location: 'Boston, MA'
+                location: 'Boston, MA',
+                occupation: 'Teacher',
+                notes: ''
               },
               position: { x: 650, y: 200 },
             },
             {
               id: '3',
-              type: 'male',
+              type: 'person',
               data: { 
                 name: 'Robert Smith',
+                biologicalSex: 'male',
                 birthDate: '1940-12-05',
-                location: 'New York, NY'
+                location: 'New York, NY',
+                occupation: 'Retired',
+                notes: ''
               },
               position: { x: 400, y: 50 },
             },
             {
               id: '4',
-              type: 'female',
+              type: 'person',
               data: { 
                 name: 'Emily Davis',
+                biologicalSex: 'female',
                 birthDate: '1992-05-10',
-                location: 'Boston, MA'
+                location: 'Boston, MA',
+                occupation: 'Designer',
+                notes: ''
               },
               position: { x: 525, y: 350 },
             },
@@ -128,41 +150,53 @@ const EditFlow = () => {
           nodes: [
             {
               id: '1',
-              type: 'female',
+              type: 'person',
               data: { 
                 name: 'Sarah Johnson',
+                biologicalSex: 'female',
                 birthDate: '1945-11-30',
-                location: 'Chicago, IL'
+                location: 'Chicago, IL',
+                occupation: 'Nurse',
+                notes: ''
               },
               position: { x: 300, y: 150 },
             },
             {
               id: '2',
-              type: 'male',
+              type: 'person',
               data: { 
                 name: 'Michael Thompson',
+                biologicalSex: 'male',
                 birthDate: '1970-07-18',
-                location: 'Chicago, IL'
+                location: 'Chicago, IL',
+                occupation: 'Lawyer',
+                notes: ''
               },
               position: { x: 300, y: 300 },
             },
             {
               id: '3',
-              type: 'female',
+              type: 'person',
               data: { 
                 name: 'Lisa Anderson',
+                biologicalSex: 'female',
                 birthDate: '1972-02-14',
-                location: 'Milwaukee, WI'
+                location: 'Milwaukee, WI',
+                occupation: 'Doctor',
+                notes: ''
               },
               position: { x: 550, y: 300 },
             },
             {
               id: '4',
-              type: 'male',
+              type: 'person',
               data: { 
                 name: 'James Thompson',
+                biologicalSex: 'male',
                 birthDate: '2000-09-05',
-                location: 'Chicago, IL'
+                location: 'Chicago, IL',
+                occupation: 'Student',
+                notes: ''
               },
               position: { x: 425, y: 450 },
             },
@@ -375,119 +409,10 @@ const EditFlow = () => {
     setNodeIdCounter(prev => prev + 1);
   }, [nodes, nodeIdCounter]);
 
-  const handleAddRelative = useCallback((sourceNodeId, relativeData) => {
-    const sourceNode = nodes.find(n => n.id === sourceNodeId);
-    if (!sourceNode) return;
-
-    const newNodeId = String(nodeIdCounter);
-    
-    let direction;
-    // Map relationship type to direction
-    switch (relativeData.relationshipType) {
-      case 'biological-parent':
-      case 'adopted-parent':
-        direction = 'parent';
-        break;
-      case 'biological-child':
-      case 'adopted-child':
-        direction = 'child';
-        break;
-      case 'spouse':
-        direction = 'spouse-right';
-        break;
-      default:
-        direction = 'spouse-right';
-    }
-    
-    const newPosition = calculateNewPosition(sourceNodeId, direction);
-    
-    const newNode = {
-      id: newNodeId,
-      type: 'person',
-      data: {
-        name: relativeData.name,
-        biologicalSex: relativeData.biologicalSex,
-        birthDate: relativeData.birthDate,
-        deathDate: relativeData.deathDate,
-        location: relativeData.location,
-        occupation: relativeData.occupation,
-        notes: relativeData.notes,
-      },
-      position: newPosition,
-    };
-
-    // Add the new node
-    setNodes((nds) => nds.concat(newNode));
-    
-    // Get source node gender for relationship labeling
-    const sourceGender = sourceNode.data.biologicalSex || sourceNode.data.gender || 'unknown';
-    const newPersonGender = relativeData.biologicalSex;
-    
-    // Create connection between nodes
-    let newEdge;
-    switch (relativeData.relationshipType) {
-      case 'biological-parent':
-      case 'adopted-parent':
-        newEdge = {
-          id: `e${newNodeId}-${sourceNodeId}`,
-          source: newNodeId,
-          target: sourceNodeId,
-          type: 'relationship',
-          data: { 
-            label: getRelationshipLabel('parent', newPersonGender, sourceGender),
-            relationshipType: relativeData.relationshipType
-          },
-          animated: true,
-          style: { 
-            stroke: relativeData.relationshipType === 'adopted-parent' ? '#ffa500' : '#6ede87', 
-            strokeWidth: 2,
-            strokeDasharray: relativeData.relationshipType === 'adopted-parent' ? '3,3' : 'none'
-          }
-        };
-        break;
-      case 'biological-child':
-      case 'adopted-child':
-        newEdge = {
-          id: `e${sourceNodeId}-${newNodeId}`,
-          source: sourceNodeId,
-          target: newNodeId,
-          type: 'relationship',
-          data: { 
-            label: getRelationshipLabel('child', sourceGender, newPersonGender),
-            relationshipType: relativeData.relationshipType
-          },
-          animated: true,
-          style: { 
-            stroke: relativeData.relationshipType === 'adopted-child' ? '#ffa500' : '#6ede87', 
-            strokeWidth: 2,
-            strokeDasharray: relativeData.relationshipType === 'adopted-child' ? '3,3' : 'none'
-          }
-        };
-        break;
-      case 'spouse':
-        newEdge = {
-          id: `e${sourceNodeId}-${newNodeId}`,
-          source: sourceNodeId,
-          target: newNodeId,
-          type: 'relationship',
-          data: { 
-            label: getRelationshipLabel('spouse', sourceGender, newPersonGender),
-            relationshipType: 'spouse'
-          },
-          animated: false,
-          style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
-        };
-        break;
-      default:
-        break;
-    }
-
-    if (newEdge) {
-      setEdges((eds) => eds.concat(newEdge));
-    }
-
-    setNodeIdCounter(prev => prev + 1);
-  }, [nodes, nodeIdCounter]);
+  const handleAddRelative = useCallback((sourceId, sourceData) => {
+    setAddRelativeSource({ id: sourceId, ...sourceData });
+    setIsAddRelativeDialogOpen(true);
+  }, []);
 
   const addNode = () => {
     const newNode = {
@@ -532,6 +457,77 @@ const EditFlow = () => {
     setEditingPerson(null);
   }, [editingPerson]);
 
+  // Handle link relative button click
+  const handleLinkRelative = useCallback((sourceId, sourceData) => {
+    setIsLinkingMode(true);
+    setLinkingSourceId(sourceId);
+    setLinkingSourceData(sourceData);
+  }, []);
+
+  // Handle target node click during linking
+  const handleNodeClickForLinking = useCallback((event, clickedNode) => {
+    if (isLinkingMode && linkingSourceId && clickedNode.id !== linkingSourceId) {
+      setLinkingTargetId(clickedNode.id);
+      setLinkingTargetData(clickedNode.data);
+      setIsLinkRelationshipDialogOpen(true);
+    }
+  }, [isLinkingMode, linkingSourceId]);
+
+  // Handle saving link relationship
+  const handleSaveLinkRelationship = useCallback((relationshipType) => {
+    if (linkingSourceId && linkingTargetId) {
+      // Determine edge styling based on relationship type
+      let edgeStyle = { strokeWidth: 2 };
+      let edgeLabel = relationshipType;
+
+      switch (relationshipType) {
+        case 'Biological Parent':
+        case 'Biological Child':
+          edgeStyle = { stroke: '#6ede87', strokeWidth: 2, strokeDasharray: 'none' };
+          break;
+        case 'Adopted Parent':
+        case 'Adopted Child':
+          edgeStyle = { stroke: '#ffa500', strokeWidth: 2, strokeDasharray: '5,5' };
+          break;
+        case 'Spouse':
+          edgeStyle = { stroke: '#e24a90', strokeWidth: 2, strokeDasharray: '3,3' };
+          break;
+        default:
+          edgeStyle = { stroke: '#6ede87', strokeWidth: 2, strokeDasharray: 'none' };
+      }
+
+      // Create relationship edge between the two nodes
+      const newEdge = {
+        id: `edge-${linkingSourceId}-${linkingTargetId}-${Date.now()}`,
+        source: linkingSourceId,
+        target: linkingTargetId,
+        label: edgeLabel,
+        type: 'smoothstep',
+        style: edgeStyle
+      };
+
+      setEdges((eds) => [...eds, newEdge]);
+    }
+
+    // Reset linking state
+    setIsLinkingMode(false);
+    setLinkingSourceId(null);
+    setLinkingSourceData(null);
+    setLinkingTargetId(null);
+    setLinkingTargetData(null);
+    setIsLinkRelationshipDialogOpen(false);
+  }, [linkingSourceId, linkingTargetId]);
+
+  // Handle cancel linking
+  const handleCancelLinking = useCallback(() => {
+    setIsLinkingMode(false);
+    setLinkingSourceId(null);
+    setLinkingSourceData(null);
+    setLinkingTargetId(null);
+    setLinkingTargetData(null);
+    setIsLinkRelationshipDialogOpen(false);
+  }, []);
+
   // Handle canceling edit
   const handleCancelEdit = useCallback(() => {
     setIsEditDialogOpen(false);
@@ -546,11 +542,132 @@ const EditFlow = () => {
     }
   }, [setNodes, setEdges]);
 
-  // Handle linking persons (for future implementation)
-  const handleLinkPerson = useCallback((personId, relationship) => {
-    // TODO: Implement linking functionality
-    alert(`Link ${relationship} functionality coming soon!`);
+  // Handle saving added relative
+  const handleSaveAddedRelative = useCallback((relativeData) => {
+    if (!addRelativeSource) return;
+
+    const sourceNode = nodes.find(node => node.id === addRelativeSource.id);
+    if (!sourceNode) return;
+
+    const newId = `${Date.now()}`;
+    const newPersonGender = relativeData.biologicalSex;
+    const sourceGender = sourceNode.data.biologicalSex || 'unknown';
+
+    // Create new person node
+    const newNode = {
+      id: newId,
+      type: 'person',
+      position: { 
+        x: sourceNode.position.x + 200, 
+        y: sourceNode.position.y + (Math.random() - 0.5) * 200 
+      },
+      data: {
+        name: relativeData.name,
+        biologicalSex: relativeData.biologicalSex,
+        birthDate: relativeData.birthDate,
+        deathDate: relativeData.deathDate,
+        location: relativeData.location,
+        occupation: relativeData.occupation,
+        notes: relativeData.notes,
+      },
+    };
+
+    // Create edge based on relationship type
+    let edgeConfig = null;
+    switch (relativeData.relationshipType) {
+      case 'biological-parent':
+        edgeConfig = {
+          id: `edge-${newId}-${addRelativeSource.id}`,
+          source: newId,
+          target: addRelativeSource.id,
+          label: newPersonGender === 'male' ? 'Father' : 'Mother',
+          type: 'smoothstep',
+          style: { 
+            stroke: '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: 'none'
+          }
+        };
+        break;
+      case 'adopted-parent':
+        edgeConfig = {
+          id: `edge-${newId}-${addRelativeSource.id}`,
+          source: newId,
+          target: addRelativeSource.id,
+          label: newPersonGender === 'male' ? 'Adoptive Father' : 'Adoptive Mother',
+          type: 'smoothstep',
+          style: { 
+            stroke: '#ffa500', 
+            strokeWidth: 2,
+            strokeDasharray: '5,5'
+          }
+        };
+        break;
+      case 'biological-child':
+        edgeConfig = {
+          id: `edge-${addRelativeSource.id}-${newId}`,
+          source: addRelativeSource.id,
+          target: newId,
+          label: newPersonGender === 'male' ? 'Son' : 'Daughter',
+          type: 'smoothstep',
+          style: { 
+            stroke: '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: 'none'
+          }
+        };
+        break;
+      case 'adopted-child':
+        edgeConfig = {
+          id: `edge-${addRelativeSource.id}-${newId}`,
+          source: addRelativeSource.id,
+          target: newId,
+          label: newPersonGender === 'male' ? 'Adopted Son' : 'Adopted Daughter',
+          type: 'smoothstep',
+          style: { 
+            stroke: '#ffa500', 
+            strokeWidth: 2,
+            strokeDasharray: '5,5'
+          }
+        };
+        break;
+      case 'spouse':
+        edgeConfig = {
+          id: `edge-${newId}-${addRelativeSource.id}`,
+          source: newId,
+          target: addRelativeSource.id,
+          label: sourceGender === 'male' && newPersonGender === 'female' ? 'Wife' : 
+                 sourceGender === 'female' && newPersonGender === 'male' ? 'Husband' : 'Spouse',
+          type: 'smoothstep',
+          style: { 
+            stroke: '#e24a90', 
+            strokeWidth: 2,
+            strokeDasharray: '3,3'
+          }
+        };
+        break;
+      default:
+        break;
+    }
+
+    // Add the node and edge
+    setNodes((nds) => [...nds, newNode]);
+    if (edgeConfig) {
+      setEdges((eds) => [...eds, edgeConfig]);
+    }
+
+    // Close dialog
+    setIsAddRelativeDialogOpen(false);
+    setAddRelativeSource(null);
+  }, [addRelativeSource, nodes, setNodes, setEdges]);
+
+  // Handle canceling add relative
+  const handleCancelAddRelative = useCallback(() => {
+    setIsAddRelativeDialogOpen(false);
+    setAddRelativeSource(null);
   }, []);
+
+
 
   const handleSave = async () => {
     if (!flowName.trim()) {
@@ -672,10 +789,19 @@ const EditFlow = () => {
           </div>
           <div className="toolbar-center">
             <div className="instructions">
-              <span>💡 Hover over a person to add family members</span>
+              {isLinkingMode ? (
+                <span style={{ color: '#ffa500' }}>� Click on another person to create a relationship</span>
+              ) : (
+                <span>💡 Click on a person to see available actions</span>
+              )}
             </div>
           </div>
           <div className="toolbar-right">
+            {isLinkingMode && (
+              <button onClick={handleCancelLinking} className="cancel-linking-button" style={{ marginRight: '10px', backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>
+                ❌ Cancel Linking
+              </button>
+            )}
             <button onClick={handleDelete} className="delete-flow-button">
               🗑️ Delete Chart
             </button>
@@ -692,13 +818,19 @@ const EditFlow = () => {
                 onAddRelative: handleAddRelative,
                 onEdit: handleEditPerson,
                 onDelete: handleDeletePerson,
-                onLink: handleLinkPerson
+                onLink: handleLinkRelative,
+                onNodeClickForLinking: handleNodeClickForLinking,
+                isLinkingMode,
+                isInLinkingMode: isLinkingMode,
+                linkingSourceId,
+                isLinkingSource: linkingSourceId === node.id
               }
             }))}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeClick={handleNodeClickForLinking}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
@@ -713,11 +845,10 @@ const EditFlow = () => {
             <MiniMap 
               style={{ background: '#2d2d2d' }}
               nodeColor={(node) => {
-                switch(node.type) {
-                  case 'male': return '#4a90e2';
-                  case 'female': return '#e24a90';
-                  default: return '#6ede87';
+                if (node.type === 'person') {
+                  return node.data?.biologicalSex === 'male' ? '#4a90e2' : '#e24a90';
                 }
+                return '#6ede87';
               }}
               maskColor="rgba(255, 255, 255, 0.1)"
             />
@@ -753,6 +884,21 @@ const EditFlow = () => {
         isOpen={isEditDialogOpen}
         onSave={handleSaveEditedPerson}
         onCancel={handleCancelEdit}
+      />
+
+      <AddRelativeDialog
+        isOpen={isAddRelativeDialogOpen}
+        onSave={handleSaveAddedRelative}
+        onCancel={handleCancelAddRelative}
+        sourcePersonData={addRelativeSource}
+      />
+
+      <LinkRelationshipDialog
+        isOpen={isLinkRelationshipDialogOpen}
+        sourcePersonData={linkingSourceData}
+        targetPersonData={linkingTargetData}
+        onSave={handleSaveLinkRelationship}
+        onCancel={handleCancelLinking}
       />
     </div>
   );

@@ -241,13 +241,14 @@ const AddFlow = () => {
     // Create new person node
     const newNode = {
       id: newId,
-      type: newPersonGender === 'male' ? 'male' : 'female',
+      type: 'person',
       position: newPosition,
       data: {
         name: 'New Person',
         birthDate: '',
         deathDate: '',
         location: '',
+        biologicalSex: newPersonGender,
         gender: newPersonGender
       },
     };
@@ -666,11 +667,10 @@ const AddFlow = () => {
             <MiniMap 
               style={{ background: '#2d2d2d' }}
               nodeColor={(node) => {
-                switch(node.type) {
-                  case 'male': return '#4a90e2';
-                  case 'female': return '#e24a90';
-                  default: return '#6ede87';
+                if (node.type === 'person') {
+                  return node.data?.biologicalSex === 'male' ? '#4a90e2' : '#e24a90';
                 }
+                return '#6ede87';
               }}
               maskColor="rgba(255, 255, 255, 0.1)"
             />

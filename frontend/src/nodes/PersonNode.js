@@ -1,76 +1,22 @@
 import React, { useState } from 'react';
 import { Handle, Position } from 'react-flow-renderer';
-import AddRelativeDialog from '../components/AddRelativeDialog';
-import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
 import './PersonNode.css';
 
 const PersonNode = ({ data, id }) => {
   const [showActions, setShowActions] = useState(false);
-  const [showAddRelativeDialog, setShowAddRelativeDialog] = useState(false);
-  const [isLinkingMode, setIsLinkingMode] = useState(false);
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [linkTarget, setLinkTarget] = useState(null);
-
-  const handleAddPerson = (direction) => {
-    if (data.onAddPerson) {
-      data.onAddPerson(id, direction);
-    }
-  };
 
   const handleAddRelative = () => {
-    setShowAddRelativeDialog(true);
-    setShowActions(false);
-  };
-
-  const handleSaveRelative = (relativeData) => {
     if (data.onAddRelative) {
-      data.onAddRelative(id, relativeData);
+      data.onAddRelative(id, data);
     }
-    setShowAddRelativeDialog(false);
-  };
-
-  const handleCancelAddRelative = () => {
-    setShowAddRelativeDialog(false);
-  };
-
-  const handleStartLinking = () => {
-    setIsLinkingMode(true);
     setShowActions(false);
-    if (data.onStartLinking) {
-      data.onStartLinking(id);
-    }
   };
 
-  const handleLinkClick = () => {
-    if (data.isInLinkingMode && data.linkingSourceId !== id) {
-      // This node was clicked as a target for linking
-      const sourceNode = data.getNodeById ? data.getNodeById(data.linkingSourceId) : null;
-      setLinkTarget({
-        id: id,
-        name: data.name,
-        biologicalSex: data.biologicalSex
-      });
-      setShowLinkDialog(true);
-      if (data.onCancelLinking) {
-        data.onCancelLinking();
-      }
+  const handleLinkRelative = () => {
+    if (data.onLink) {
+      data.onLink(id, data);
     }
-  };
-
-  const handleSaveLinkRelationship = (relationshipType) => {
-    if (data.onCreateLink && linkTarget) {
-      data.onCreateLink(data.linkingSourceId, linkTarget.id, relationshipType);
-    }
-    setShowLinkDialog(false);
-    setLinkTarget(null);
-  };
-
-  const handleCancelLinkDialog = () => {
-    setShowLinkDialog(false);
-    setLinkTarget(null);
-    if (data.onCancelLinking) {
-      data.onCancelLinking();
-    }
+    setShowActions(false);
   };
 
   const handleDoubleClick = () => {
@@ -82,9 +28,9 @@ const PersonNode = ({ data, id }) => {
   const handleNodeClick = (e) => {
     e.stopPropagation();
     
-    // If in linking mode and this isn't the source node, handle link selection
-    if (data.isInLinkingMode && data.linkingSourceId !== id) {
-      handleLinkClick();
+    // If in linking mode and this isn't the source node, call the parent's linking handler
+    if (data.isLinkingMode && data.linkingSourceId !== id && data.onNodeClickForLinking) {
+      data.onNodeClickForLinking(e, { id, data });
       return;
     }
     
@@ -106,20 +52,11 @@ const PersonNode = ({ data, id }) => {
     setShowActions(false);
   };
 
-  const handleLinkPerson = (relationship) => {
-    if (data.onLink) {
-      data.onLink(id, relationship);
-    }
-    setShowActions(false);
-  };
-
   return (
     <div 
       className={`person-node ${data.biologicalSex === 'female' ? 'female' : 'male'}${
-        data.isInLinkingMode && data.linkingSourceId !== id ? ' linking-mode' : ''
-      }${
-        data.linkingSourceId === id ? ' linking-source' : ''
-      }`}
+        data.isLinkingMode && data.linkingSourceId !== id ? ' linking-mode' : ''
+      }${data.isLinkingSource ? ' linking-source' : ''}`}
       onClick={handleNodeClick}
       onDoubleClick={handleDoubleClick}
     >
@@ -231,7 +168,7 @@ const PersonNode = ({ data, id }) => {
               className="action-btn link-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                handleStartLinking();
+                handleLinkRelative();
               }}
               title="Link to Relative"
             >
@@ -244,24 +181,6 @@ const PersonNode = ({ data, id }) => {
           </div>
         </div>
       )}
-
-      <AddRelativeDialog
-        isOpen={showAddRelativeDialog}
-        onSave={handleSaveRelative}
-        onCancel={handleCancelAddRelative}
-      />
-
-      <LinkRelationshipDialog
-        isOpen={showLinkDialog}
-        onSave={handleSaveLinkRelationship}
-        onCancel={handleCancelLinkDialog}
-        sourcePerson={{
-          id: data.linkingSourceId,
-          name: data.linkingSourceName,
-          biologicalSex: data.linkingSourceSex
-        }}
-        targetPerson={linkTarget}
-      />
     </div>
   );
 };
