@@ -14,39 +14,15 @@ const FlowList = () => {
   const fetchFlows = async () => {
     try {
       setLoading(true);
-      // For now, we'll use mock data. You can replace this with actual API calls
-      const mockFlows = [
-        {
-          id: '1',
-          name: 'Smith Family Tree',
-          description: 'The Smith family ancestry going back 4 generations',
-          nodeCount: 12,
-          edgeCount: 11,
-          createdAt: '2024-01-15T10:30:00Z',
-          updatedAt: '2024-01-16T14:20:00Z'
-        },
-        {
-          id: '2',
-          name: 'Johnson Heritage',
-          description: 'Johnson family lineage from Ireland to America',
-          nodeCount: 8,
-          edgeCount: 7,
-          createdAt: '2024-01-14T09:15:00Z',
-          updatedAt: '2024-01-15T11:45:00Z'
-        },
-        {
-          id: '3',
-          name: 'Garcia Ancestry',
-          description: 'Garcia family tree with Spanish and Mexican roots',
-          nodeCount: 15,
-          edgeCount: 18,
-          createdAt: '2024-01-13T16:20:00Z',
-          updatedAt: '2024-01-14T08:30:00Z'
-        }
-      ];
+      const response = await fetch('http://localhost:3001/api/flows');
+      const result = await response.json();
       
-      setFlows(mockFlows);
-      setError(null);
+      if (result.success) {
+        setFlows(result.data);
+        setError(null);
+      } else {
+        setError('Failed to fetch flows');
+      }
     } catch (err) {
       setError('Failed to fetch flows');
       console.error('Error fetching flows:', err);
@@ -58,8 +34,16 @@ const FlowList = () => {
   const handleDelete = async (flowId) => {
     if (window.confirm('Are you sure you want to delete this flow?')) {
       try {
-        // Here you would make an API call to delete the flow
-        setFlows(flows.filter(flow => flow.id !== flowId));
+        const response = await fetch(`http://localhost:3001/api/flows/${flowId}`, {
+          method: 'DELETE',
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          setFlows(flows.filter(flow => flow.id !== flowId));
+        } else {
+          setError('Failed to delete flow');
+        }
       } catch (err) {
         setError('Failed to delete flow');
         console.error('Error deleting flow:', err);

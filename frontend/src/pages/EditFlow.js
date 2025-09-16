@@ -13,7 +13,7 @@ import PersonEditDialog from '../components/PersonEditDialog';
 import AddRelativeDialog from '../components/AddRelativeDialog';
 import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
-import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship } from '../constants/relationships';
+import { getEdgeStyleForRelationship } from '../constants/relationships';
 import './EditFlow.css';
 
 // Custom node types for ancestry
@@ -55,195 +55,19 @@ const EditFlow = () => {
   const loadFlow = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockFlowData = {
-        '1': {
-          id: '1',
-          name: 'Smith Family Tree',
-          description: 'A multi-generational family tree',
-          nodes: [
-            {
-              id: '1',
-              type: 'person',
-              data: { 
-                name: 'John Smith',
-                biologicalSex: 'male',
-                birthDate: '1965-03-15',
-                location: 'Boston, MA',
-                occupation: 'Engineer',
-                notes: ''
-              },
-              position: { x: 400, y: 200 },
-            },
-            {
-              id: '2',
-              type: 'person',
-              data: { 
-                name: 'Mary Johnson',
-                biologicalSex: 'female',
-                birthDate: '1967-08-22',
-                location: 'Boston, MA',
-                occupation: 'Teacher',
-                notes: ''
-              },
-              position: { x: 650, y: 200 },
-            },
-            {
-              id: '3',
-              type: 'person',
-              data: { 
-                name: 'Robert Smith',
-                biologicalSex: 'male',
-                birthDate: '1940-12-05',
-                location: 'New York, NY',
-                occupation: 'Retired',
-                notes: ''
-              },
-              position: { x: 400, y: 50 },
-            },
-            {
-              id: '4',
-              type: 'person',
-              data: { 
-                name: 'Emily Davis',
-                biologicalSex: 'female',
-                birthDate: '1992-05-10',
-                location: 'Boston, MA',
-                occupation: 'Designer',
-                notes: ''
-              },
-              position: { x: 525, y: 350 },
-            },
-          ],
-          edges: [
-            { 
-              id: 'e1-2', 
-              source: '1', 
-              target: '2', 
-              type: 'relationship',
-              data: { label: 'Husband', relationshipType: 'spouse' },
-              style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
-            },
-            { 
-              id: 'e3-1', 
-              source: '3', 
-              target: '1', 
-              type: 'relationship',
-              data: { label: 'Father', relationshipType: 'parent' },
-              animated: true,
-              style: { stroke: '#6ede87', strokeWidth: 2 }
-            },
-            { 
-              id: 'e1-4', 
-              source: '1', 
-              target: '4', 
-              type: 'relationship',
-              data: { label: 'Father', relationshipType: 'parent' },
-              animated: true,
-              style: { stroke: '#6ede87', strokeWidth: 2 }
-            },
-          ],
-        },
-        '2': {
-          id: '2',
-          name: 'Johnson Ancestry',
-          description: 'Historical family lineage',
-          nodes: [
-            {
-              id: '1',
-              type: 'person',
-              data: { 
-                name: 'Sarah Johnson',
-                biologicalSex: 'female',
-                birthDate: '1945-11-30',
-                location: 'Chicago, IL',
-                occupation: 'Nurse',
-                notes: ''
-              },
-              position: { x: 300, y: 150 },
-            },
-            {
-              id: '2',
-              type: 'person',
-              data: { 
-                name: 'Michael Thompson',
-                biologicalSex: 'male',
-                birthDate: '1970-07-18',
-                location: 'Chicago, IL',
-                occupation: 'Lawyer',
-                notes: ''
-              },
-              position: { x: 300, y: 300 },
-            },
-            {
-              id: '3',
-              type: 'person',
-              data: { 
-                name: 'Lisa Anderson',
-                biologicalSex: 'female',
-                birthDate: '1972-02-14',
-                location: 'Milwaukee, WI',
-                occupation: 'Doctor',
-                notes: ''
-              },
-              position: { x: 550, y: 300 },
-            },
-            {
-              id: '4',
-              type: 'person',
-              data: { 
-                name: 'James Thompson',
-                biologicalSex: 'male',
-                birthDate: '2000-09-05',
-                location: 'Chicago, IL',
-                occupation: 'Student',
-                notes: ''
-              },
-              position: { x: 425, y: 450 },
-            },
-          ],
-          edges: [
-            { 
-              id: 'e1-2', 
-              source: '1', 
-              target: '2', 
-              type: 'relationship',
-              data: { label: 'Mother', relationshipType: 'parent' },
-              animated: true,
-              style: { stroke: '#6ede87', strokeWidth: 2 }
-            },
-            { 
-              id: 'e2-3', 
-              source: '2', 
-              target: '3', 
-              type: 'relationship',
-              data: { label: 'Husband', relationshipType: 'spouse' },
-              style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
-            },
-            { 
-              id: 'e2-4', 
-              source: '2', 
-              target: '4', 
-              type: 'relationship',
-              data: { label: 'Father', relationshipType: 'parent' },
-              animated: true,
-              style: { stroke: '#6ede87', strokeWidth: 2 }
-            },
-          ],
-        }
-      };
-
-      const flowData = mockFlowData[id];
-      if (!flowData) {
+      const response = await fetch(`http://localhost:3001/api/flows/${id}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const flowData = result.data;
+        setFlowName(flowData.name);
+        setFlowDescription(flowData.description);
+        setNodes(flowData.nodes);
+        setEdges(flowData.edges);
+        setError(null);
+      } else {
         setError('Flow not found');
-        return;
       }
-
-      setFlowName(flowData.name);
-      setFlowDescription(flowData.description);
-      setNodes(flowData.nodes);
-      setEdges(flowData.edges);
-      setError(null);
     } catch (err) {
       setError('Failed to load flow');
       console.error('Error loading flow:', err);
@@ -662,23 +486,27 @@ const EditFlow = () => {
 
     setSaving(true);
     try {
-      // Here you would make an API call to update the flow
-      const flowData = {
-        id,
-        name: flowName,
-        description: flowDescription,
-        nodes,
-        edges,
-        updatedAt: new Date().toISOString()
-      };
+      const response = await fetch(`http://localhost:3001/api/flows/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: flowName,
+          description: flowDescription,
+          nodes,
+          edges,
+        }),
+      });
 
-      console.log('Updating ancestry chart:', flowData);
+      const result = await response.json();
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      alert('Ancestry chart updated successfully!');
-      navigate('/');
+      if (result.success) {
+        alert('Ancestry chart updated successfully!');
+        navigate('/');
+      } else {
+        throw new Error(result.error || 'Failed to save');
+      }
     } catch (error) {
       console.error('Error updating ancestry chart:', error);
       alert('Failed to update ancestry chart. Please try again.');
