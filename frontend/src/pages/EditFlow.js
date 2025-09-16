@@ -515,11 +515,6 @@ const EditFlow = () => {
 
   return (
     <div className="edit-flow-container">
-      <div className="page-header">
-        <h1>Edit Ancestry Chart</h1>
-        <p>Modify your family tree. Hover over people to add family members.</p>
-      </div>
-
       <div className="flow-form">
         <div className="form-row">
           <div className="form-group">

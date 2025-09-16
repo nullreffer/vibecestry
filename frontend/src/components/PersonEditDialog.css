@@ -163,7 +163,8 @@
 @media (max-width: 640px) {
   .dialog-content {
     width: 95%;
-    margin: 20px;
+    margin: 10px;
+    max-height: 95vh;
   }
   
   .form-grid {
@@ -175,16 +176,51 @@
     padding: 16px 20px;
   }
   
+  .dialog-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .close-button {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+  
   .dialog-form {
     padding: 20px;
   }
   
+  .form-group input,
+  .form-group select {
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 44px;
+    padding: 12px;
+  }
+  
   .dialog-actions {
     flex-direction: column-reverse;
+    gap: 12px;
   }
   
   .cancel-btn,
   .save-btn {
     width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dialog-content {
+    width: 98%;
+    margin: 5px;
+  }
+  
+  .dialog-header {
+    padding: 14px 16px;
+  }
+  
+  .dialog-form {
+    padding: 16px;
   }
 }

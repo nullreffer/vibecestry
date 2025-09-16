@@ -361,11 +361,6 @@ const AddFlow = () => {
 
   return (
     <div className="add-flow-container">
-      <div className="page-header">
-        <h1>Create New Ancestry Chart</h1>
-        <p>Build your family tree. Hover over people to add family members.</p>
-      </div>
-
       <div className="flow-form">
         <div className="form-row">
           <div className="form-group">

@@ -98,25 +98,17 @@ const FlowList = () => {
 
   return (
     <div className="flow-list-container">
-      <div className="page-header">
-        <h1>Flow Library</h1>
-        <p>Manage your React Flow diagrams</p>
-        <Link to="/add" className="add-flow-button">
-          + Create New Flow
-        </Link>
-      </div>
-
       {flows.length === 0 ? (
         <div className="empty-state">
-          <h3>No flows yet</h3>
-          <p>Create your first flow to get started</p>
+          <h3>No Ancestry Charts Yet</h3>
+          <p>Start building your family tree by creating your first chart.</p>
           <Link to="/add" className="cta-button">
-            Create Flow
+            Create Your First Chart
           </Link>
         </div>
       ) : (
         <div className="flows-grid">
-          {flows.map(flow => (
+          {flows.map((flow) => (
             <div key={flow.id} className="flow-card">
               <div className="flow-card-header">
                 <h3>{flow.name}</h3>
