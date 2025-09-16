@@ -1,13 +1,75 @@
 import React, { useState } from 'react';
 import { Handle, Position } from 'react-flow-renderer';
+import AddRelativeDialog from '../components/AddRelativeDialog';
+import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
 import './PersonNode.css';
 
 const PersonNode = ({ data, id }) => {
   const [showActions, setShowActions] = useState(false);
+  const [showAddRelativeDialog, setShowAddRelativeDialog] = useState(false);
+  const [isLinkingMode, setIsLinkingMode] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkTarget, setLinkTarget] = useState(null);
 
   const handleAddPerson = (direction) => {
     if (data.onAddPerson) {
       data.onAddPerson(id, direction);
+    }
+  };
+
+  const handleAddRelative = () => {
+    setShowAddRelativeDialog(true);
+    setShowActions(false);
+  };
+
+  const handleSaveRelative = (relativeData) => {
+    if (data.onAddRelative) {
+      data.onAddRelative(id, relativeData);
+    }
+    setShowAddRelativeDialog(false);
+  };
+
+  const handleCancelAddRelative = () => {
+    setShowAddRelativeDialog(false);
+  };
+
+  const handleStartLinking = () => {
+    setIsLinkingMode(true);
+    setShowActions(false);
+    if (data.onStartLinking) {
+      data.onStartLinking(id);
+    }
+  };
+
+  const handleLinkClick = () => {
+    if (data.isInLinkingMode && data.linkingSourceId !== id) {
+      // This node was clicked as a target for linking
+      const sourceNode = data.getNodeById ? data.getNodeById(data.linkingSourceId) : null;
+      setLinkTarget({
+        id: id,
+        name: data.name,
+        biologicalSex: data.biologicalSex
+      });
+      setShowLinkDialog(true);
+      if (data.onCancelLinking) {
+        data.onCancelLinking();
+      }
+    }
+  };
+
+  const handleSaveLinkRelationship = (relationshipType) => {
+    if (data.onCreateLink && linkTarget) {
+      data.onCreateLink(data.linkingSourceId, linkTarget.id, relationshipType);
+    }
+    setShowLinkDialog(false);
+    setLinkTarget(null);
+  };
+
+  const handleCancelLinkDialog = () => {
+    setShowLinkDialog(false);
+    setLinkTarget(null);
+    if (data.onCancelLinking) {
+      data.onCancelLinking();
     }
   };
 
@@ -19,6 +81,14 @@ const PersonNode = ({ data, id }) => {
 
   const handleNodeClick = (e) => {
     e.stopPropagation();
+    
+    // If in linking mode and this isn't the source node, handle link selection
+    if (data.isInLinkingMode && data.linkingSourceId !== id) {
+      handleLinkClick();
+      return;
+    }
+    
+    // Otherwise, toggle actions panel
     setShowActions(!showActions);
   };
 
@@ -45,7 +115,11 @@ const PersonNode = ({ data, id }) => {
 
   return (
     <div 
-      className="person-node"
+      className={`person-node ${data.biologicalSex === 'female' ? 'female' : 'male'}${
+        data.isInLinkingMode && data.linkingSourceId !== id ? ' linking-mode' : ''
+      }${
+        data.linkingSourceId === id ? ' linking-source' : ''
+      }`}
       onClick={handleNodeClick}
       onDoubleClick={handleDoubleClick}
     >
@@ -110,44 +184,14 @@ const PersonNode = ({ data, id }) => {
               className="action-btn add-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                handleAddPerson('parent');
+                handleAddRelative();
               }}
-              title="Add Parent"
+              title="Add Relative"
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 1L6.5 2.5 8 4l1.5-1.5L8 1zM5 5.5C5 4.7 5.7 4 6.5 4h3c.8 0 1.5.7 1.5 1.5v1c0 .6-.4 1.1-1 1.4v1.6c0 .8-.7 1.5-1.5 1.5h-1C6.7 11 6 10.3 6 9.5V7.9c-.6-.3-1-.8-1-1.4v-1z"/>
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
               </svg>
-              Add Parent
-            </button>
-            
-            <button
-              className="action-btn add-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddPerson('child');
-              }}
-              title="Add Child"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 12a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0-1a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-                <path d="M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13z"/>
-              </svg>
-              Add Child
-            </button>
-            
-            <button
-              className="action-btn add-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddPerson('spouse-right');
-              }}
-              title="Add Spouse"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M6 2a2 2 0 1 1 4 0 2 2 0 0 1-4 0zm6 6c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v4h2V9h1v3h2V9h1v3h2V8z"/>
-                <circle cx="13" cy="13" r="2"/>
-              </svg>
-              Add Spouse
+              Add Relative
             </button>
           </div>
           
@@ -187,49 +231,37 @@ const PersonNode = ({ data, id }) => {
               className="action-btn link-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                handleLinkPerson('parent');
+                handleStartLinking();
               }}
-              title="Link to Parent"
+              title="Link to Relative"
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
                 <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
               </svg>
-              Link Parent
-            </button>
-            
-            <button
-              className="action-btn link-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLinkPerson('child');
-              }}
-              title="Link to Child"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-                <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-              </svg>
-              Link Child
-            </button>
-            
-            <button
-              className="action-btn link-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleLinkPerson('spouse');
-              }}
-              title="Link to Spouse"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/>
-                <path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/>
-              </svg>
-              Link Spouse
+              Link Relative
             </button>
           </div>
         </div>
       )}
+
+      <AddRelativeDialog
+        isOpen={showAddRelativeDialog}
+        onSave={handleSaveRelative}
+        onCancel={handleCancelAddRelative}
+      />
+
+      <LinkRelationshipDialog
+        isOpen={showLinkDialog}
+        onSave={handleSaveLinkRelationship}
+        onCancel={handleCancelLinkDialog}
+        sourcePerson={{
+          id: data.linkingSourceId,
+          name: data.linkingSourceName,
+          biologicalSex: data.linkingSourceSex
+        }}
+        targetPerson={linkTarget}
+      />
     </div>
   );
 };

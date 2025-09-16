@@ -9,16 +9,12 @@ import ReactFlow, {
   addEdge,
 } from 'react-flow-renderer';
 import PersonNode from '../nodes/PersonNode';
-import MaleNode from '../nodes/MaleNode';
-import FemaleNode from '../nodes/FemaleNode';
 import PersonEditDialog from '../components/PersonEditDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import './AddFlow.css';
 
 const nodeTypes = {
   person: PersonNode,
-  male: MaleNode,
-  female: FemaleNode,
 };
 
 const edgeTypes = {
@@ -32,10 +28,12 @@ const initialNodes = [
     position: { x: 400, y: 300 },
     data: { 
       name: 'Start Person',
+      biologicalSex: 'male',
       birthDate: '',
       deathDate: '',
       location: '',
-      gender: 'unknown'
+      occupation: '',
+      notes: ''
     },
   },
 ];
@@ -51,6 +49,9 @@ const AddFlow = () => {
   const [saving, setSaving] = useState(false);
   const [editingPerson, setEditingPerson] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isLinkingMode, setIsLinkingMode] = useState(false);
+  const [linkingSourceId, setLinkingSourceId] = useState(null);
+  const [linkingSourceData, setLinkingSourceData] = useState(null);
 
   // Generation-based positioning constants
   const GENERATION_HEIGHT = 200;
@@ -258,6 +259,128 @@ const AddFlow = () => {
     }
   }, [nodes, setNodes, setEdges]);
 
+  const handleAddRelative = useCallback((parentId, relativeData) => {
+    console.log('Adding relative:', { parentId, relativeData });
+    
+    const parentNode = nodes.find(node => node.id === parentId);
+    if (!parentNode) return;
+
+    const newId = `${Date.now()}`;
+    const parentGeneration = getPersonGeneration(parentId);
+    
+    let newGeneration;
+    let direction;
+    
+    // Map relationship type to direction
+    switch (relativeData.relationshipType) {
+      case 'biological-parent':
+      case 'adopted-parent':
+        direction = 'parent';
+        newGeneration = parentGeneration + 1;
+        break;
+      case 'biological-child':
+      case 'adopted-child':
+        direction = 'child';
+        newGeneration = parentGeneration - 1;
+        break;
+      case 'spouse':
+        direction = 'spouse-right';
+        newGeneration = parentGeneration;
+        break;
+      default:
+        direction = 'spouse-right';
+        newGeneration = parentGeneration;
+    }
+    
+    const newPosition = getPositionForGeneration(newGeneration, direction, parentNode);
+    let edgeConfig = null;
+    
+    // Determine genders for relationship labeling
+    const parentGender = parentNode.data.biologicalSex || parentNode.data.gender || 'unknown';
+    const newPersonGender = relativeData.biologicalSex;
+
+    // Create edge configuration based on relationship type
+    switch (relativeData.relationshipType) {
+      case 'biological-parent':
+      case 'adopted-parent':
+        edgeConfig = {
+          id: `edge-${newId}-${parentId}`,
+          source: newId,
+          target: parentId,
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('parent', newPersonGender, parentGender),
+            relationshipType: relativeData.relationshipType
+          },
+          style: { 
+            stroke: relativeData.relationshipType === 'adopted-parent' ? '#ffa500' : '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: relativeData.relationshipType === 'adopted-parent' ? '3,3' : 'none'
+          }
+        };
+        break;
+      case 'biological-child':
+      case 'adopted-child':
+        edgeConfig = {
+          id: `edge-${parentId}-${newId}`,
+          source: parentId,
+          target: newId,
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('child', parentGender, newPersonGender),
+            relationshipType: relativeData.relationshipType
+          },
+          style: { 
+            stroke: relativeData.relationshipType === 'adopted-child' ? '#ffa500' : '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: relativeData.relationshipType === 'adopted-child' ? '3,3' : 'none'
+          }
+        };
+        break;
+      case 'spouse':
+        edgeConfig = {
+          id: `edge-${newId}-${parentId}`,
+          source: newId,
+          target: parentId,
+          sourceHandle: 'left',
+          targetHandle: 'right',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('spouse', newPersonGender, parentGender),
+            relationshipType: 'spouse'
+          },
+          style: { stroke: '#e24a90', strokeWidth: 2, strokeDasharray: '5,5' }
+        };
+        break;
+    }
+
+    // Create new person node
+    const newNode = {
+      id: newId,
+      type: 'person',
+      position: newPosition,
+      data: {
+        name: relativeData.name,
+        biologicalSex: relativeData.biologicalSex,
+        birthDate: relativeData.birthDate,
+        deathDate: relativeData.deathDate,
+        location: relativeData.location,
+        occupation: relativeData.occupation,
+        notes: relativeData.notes,
+      },
+    };
+
+    // Add the node and edge
+    setNodes((nds) => [...nds, newNode]);
+    if (edgeConfig) {
+      setEdges((eds) => [...eds, edgeConfig]);
+    }
+  }, [nodes, setNodes, setEdges]);
+
   const addNode = () => {
     const newNode = {
       id: `${Date.now()}`,
@@ -268,14 +391,113 @@ const AddFlow = () => {
       },
       data: { 
         name: 'New Person',
+        biologicalSex: 'male',
         birthDate: '',
         deathDate: '',
         location: '',
-        gender: 'unknown'
+        occupation: '',
+        notes: ''
       },
     };
     setNodes((nds) => [...nds, newNode]);
   };
+
+  // Linking functions
+  const handleStartLinking = useCallback((sourceNodeId) => {
+    const sourceNode = nodes.find(node => node.id === sourceNodeId);
+    if (sourceNode) {
+      setIsLinkingMode(true);
+      setLinkingSourceId(sourceNodeId);
+      setLinkingSourceData(sourceNode.data);
+    }
+  }, [nodes]);
+
+  const handleCancelLinking = useCallback(() => {
+    setIsLinkingMode(false);
+    setLinkingSourceId(null);
+    setLinkingSourceData(null);
+  }, []);
+
+  const handleCreateLink = useCallback((sourceId, targetId, relationshipType) => {
+    const sourceNode = nodes.find(n => n.id === sourceId);
+    const targetNode = nodes.find(n => n.id === targetId);
+    
+    if (!sourceNode || !targetNode) return;
+
+    const sourceGender = sourceNode.data.biologicalSex || 'unknown';
+    const targetGender = targetNode.data.biologicalSex || 'unknown';
+
+    // Create edge configuration
+    let edgeConfig;
+    switch (relationshipType) {
+      case 'biological-parent':
+      case 'adopted-parent':
+        edgeConfig = {
+          id: `edge-${sourceId}-${targetId}`,
+          source: sourceId,
+          target: targetId,
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('parent', sourceGender, targetGender),
+            relationshipType: relationshipType
+          },
+          style: { 
+            stroke: relationshipType === 'adopted-parent' ? '#ffa500' : '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: relationshipType === 'adopted-parent' ? '3,3' : 'none'
+          }
+        };
+        break;
+      case 'biological-child':
+      case 'adopted-child':
+        edgeConfig = {
+          id: `edge-${sourceId}-${targetId}`,
+          source: sourceId,
+          target: targetId,
+          sourceHandle: 'bottom',
+          targetHandle: 'top',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('child', sourceGender, targetGender),
+            relationshipType: relationshipType
+          },
+          style: { 
+            stroke: relationshipType === 'adopted-child' ? '#ffa500' : '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: relationshipType === 'adopted-child' ? '3,3' : 'none'
+          }
+        };
+        break;
+      case 'spouse':
+        edgeConfig = {
+          id: `edge-${sourceId}-${targetId}`,
+          source: sourceId,
+          target: targetId,
+          sourceHandle: 'right',
+          targetHandle: 'left',
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('spouse', sourceGender, targetGender),
+            relationshipType: 'spouse'
+          },
+          style: { stroke: '#e24a90', strokeWidth: 2, strokeDasharray: '5,5' }
+        };
+        break;
+    }
+
+    if (edgeConfig) {
+      setEdges((eds) => [...eds, edgeConfig]);
+    }
+
+    // Exit linking mode
+    handleCancelLinking();
+  }, [nodes, setEdges, handleCancelLinking]);
+
+  const getNodeById = useCallback((nodeId) => {
+    return nodes.find(n => n.id === nodeId);
+  }, [nodes]);
 
   // Handle editing a person
   const handleEditPerson = useCallback((personId, personData) => {
@@ -412,9 +634,18 @@ const AddFlow = () => {
               data: {
                 ...node.data,
                 onAddPerson: handleAddPerson,
+                onAddRelative: handleAddRelative,
                 onEdit: handleEditPerson,
                 onDelete: handleDeletePerson,
-                onLink: handleLinkPerson
+                onLink: handleLinkPerson,
+                onStartLinking: handleStartLinking,
+                onCancelLinking: handleCancelLinking,
+                onCreateLink: handleCreateLink,
+                isInLinkingMode: isLinkingMode,
+                linkingSourceId: linkingSourceId,
+                linkingSourceName: linkingSourceData?.name,
+                linkingSourceSex: linkingSourceData?.biologicalSex,
+                getNodeById: getNodeById
               }
             }))}
             edges={edges}

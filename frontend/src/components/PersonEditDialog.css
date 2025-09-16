@@ -87,7 +87,8 @@
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   background: #1a1a1a;
   border: 1px solid #404040;
   border-radius: 6px;
@@ -98,10 +99,21 @@
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
   outline: none;
   border-color: #6ede87;
   box-shadow: 0 0 0 3px rgba(110, 222, 135, 0.1);
+}
+
+.form-group select {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.form-group select option {
+  background: #1a1a1a;
+  color: #ffffff;
 }
 
 .form-group input::placeholder,
@@ -222,5 +234,52 @@
   
   .dialog-form {
     padding: 16px;
+  }
+}
+
+.link-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1a1a;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.person-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.person-preview strong {
+  color: #ffffff;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.person-gender {
+  color: #888888;
+  font-size: 0.85rem;
+}
+
+.link-arrow {
+  color: #6ede87;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Mobile responsiveness for link dialog */
+@media (max-width: 640px) {
+  .link-preview {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .link-arrow {
+    transform: rotate(90deg);
   }
 }

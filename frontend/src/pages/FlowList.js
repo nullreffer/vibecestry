@@ -18,17 +18,17 @@ const FlowList = () => {
       const mockFlows = [
         {
           id: '1',
-          name: 'Sample Flow 1',
-          description: 'A sample flow for demonstration',
-          nodeCount: 5,
-          edgeCount: 4,
+          name: 'Smith Family Tree',
+          description: 'The Smith family ancestry going back 4 generations',
+          nodeCount: 12,
+          edgeCount: 11,
           createdAt: '2024-01-15T10:30:00Z',
           updatedAt: '2024-01-16T14:20:00Z'
         },
         {
           id: '2',
-          name: 'Data Processing Flow',
-          description: 'Flow for processing user data',
+          name: 'Johnson Heritage',
+          description: 'Johnson family lineage from Ireland to America',
           nodeCount: 8,
           edgeCount: 7,
           createdAt: '2024-01-14T09:15:00Z',
@@ -36,10 +36,10 @@ const FlowList = () => {
         },
         {
           id: '3',
-          name: 'Workflow Automation',
-          description: 'Automated workflow for task management',
-          nodeCount: 12,
-          edgeCount: 15,
+          name: 'Garcia Ancestry',
+          description: 'Garcia family tree with Spanish and Mexican roots',
+          nodeCount: 15,
+          edgeCount: 18,
           createdAt: '2024-01-13T16:20:00Z',
           updatedAt: '2024-01-14T08:30:00Z'
         }

@@ -9,8 +9,6 @@ import ReactFlow, {
   MiniMap,
 } from 'react-flow-renderer';
 import PersonNode from '../nodes/PersonNode';
-import MaleNode from '../nodes/MaleNode';
-import FemaleNode from '../nodes/FemaleNode';
 import PersonEditDialog from '../components/PersonEditDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import './EditFlow.css';
@@ -18,8 +16,6 @@ import './EditFlow.css';
 // Custom node types for ancestry
 const nodeTypes = {
   person: PersonNode,
-  male: MaleNode,
-  female: FemaleNode,
 };
 
 const edgeTypes = {
@@ -249,8 +245,11 @@ const EditFlow = () => {
     
     return {
       name: randomName,
+      biologicalSex: Math.random() > 0.5 ? 'male' : 'female',
       birthDate: `${Math.floor(Math.random() * 50) + 1950}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-      location: ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX'][Math.floor(Math.random() * 4)]
+      location: ['New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX'][Math.floor(Math.random() * 4)],
+      occupation: '',
+      notes: ''
     };
   };
 
@@ -305,14 +304,10 @@ const EditFlow = () => {
     const newPosition = calculateNewPosition(sourceNodeId, direction);
     const personData = generatePersonData(direction === 'spouse-left' || direction === 'spouse-right' ? 'spouse' : direction);
     
-    // Determine node type based on relationship and random gender
-    const newPersonGender = Math.random() > 0.5 ? 'male' : 'female';
-    const nodeType = newPersonGender;
-    
     const newNode = {
       id: newNodeId,
-      type: nodeType,
-      data: { ...personData, gender: newPersonGender },
+      type: 'person',
+      data: personData,
       position: newPosition,
     };
 
@@ -320,7 +315,8 @@ const EditFlow = () => {
     setNodes((nds) => nds.concat(newNode));
     
     // Get source node gender for relationship labeling
-    const sourceGender = sourceNode.data.gender || 'unknown';
+    const sourceGender = sourceNode.data.biologicalSex || sourceNode.data.gender || 'unknown';
+    const newPersonGender = newNode.data.biologicalSex;
     
     // Create connection between nodes
     let newEdge;
@@ -379,11 +375,133 @@ const EditFlow = () => {
     setNodeIdCounter(prev => prev + 1);
   }, [nodes, nodeIdCounter]);
 
+  const handleAddRelative = useCallback((sourceNodeId, relativeData) => {
+    const sourceNode = nodes.find(n => n.id === sourceNodeId);
+    if (!sourceNode) return;
+
+    const newNodeId = String(nodeIdCounter);
+    
+    let direction;
+    // Map relationship type to direction
+    switch (relativeData.relationshipType) {
+      case 'biological-parent':
+      case 'adopted-parent':
+        direction = 'parent';
+        break;
+      case 'biological-child':
+      case 'adopted-child':
+        direction = 'child';
+        break;
+      case 'spouse':
+        direction = 'spouse-right';
+        break;
+      default:
+        direction = 'spouse-right';
+    }
+    
+    const newPosition = calculateNewPosition(sourceNodeId, direction);
+    
+    const newNode = {
+      id: newNodeId,
+      type: 'person',
+      data: {
+        name: relativeData.name,
+        biologicalSex: relativeData.biologicalSex,
+        birthDate: relativeData.birthDate,
+        deathDate: relativeData.deathDate,
+        location: relativeData.location,
+        occupation: relativeData.occupation,
+        notes: relativeData.notes,
+      },
+      position: newPosition,
+    };
+
+    // Add the new node
+    setNodes((nds) => nds.concat(newNode));
+    
+    // Get source node gender for relationship labeling
+    const sourceGender = sourceNode.data.biologicalSex || sourceNode.data.gender || 'unknown';
+    const newPersonGender = relativeData.biologicalSex;
+    
+    // Create connection between nodes
+    let newEdge;
+    switch (relativeData.relationshipType) {
+      case 'biological-parent':
+      case 'adopted-parent':
+        newEdge = {
+          id: `e${newNodeId}-${sourceNodeId}`,
+          source: newNodeId,
+          target: sourceNodeId,
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('parent', newPersonGender, sourceGender),
+            relationshipType: relativeData.relationshipType
+          },
+          animated: true,
+          style: { 
+            stroke: relativeData.relationshipType === 'adopted-parent' ? '#ffa500' : '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: relativeData.relationshipType === 'adopted-parent' ? '3,3' : 'none'
+          }
+        };
+        break;
+      case 'biological-child':
+      case 'adopted-child':
+        newEdge = {
+          id: `e${sourceNodeId}-${newNodeId}`,
+          source: sourceNodeId,
+          target: newNodeId,
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('child', sourceGender, newPersonGender),
+            relationshipType: relativeData.relationshipType
+          },
+          animated: true,
+          style: { 
+            stroke: relativeData.relationshipType === 'adopted-child' ? '#ffa500' : '#6ede87', 
+            strokeWidth: 2,
+            strokeDasharray: relativeData.relationshipType === 'adopted-child' ? '3,3' : 'none'
+          }
+        };
+        break;
+      case 'spouse':
+        newEdge = {
+          id: `e${sourceNodeId}-${newNodeId}`,
+          source: sourceNodeId,
+          target: newNodeId,
+          type: 'relationship',
+          data: { 
+            label: getRelationshipLabel('spouse', sourceGender, newPersonGender),
+            relationshipType: 'spouse'
+          },
+          animated: false,
+          style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
+        };
+        break;
+      default:
+        break;
+    }
+
+    if (newEdge) {
+      setEdges((eds) => eds.concat(newEdge));
+    }
+
+    setNodeIdCounter(prev => prev + 1);
+  }, [nodes, nodeIdCounter]);
+
   const addNode = () => {
     const newNode = {
       id: String(nodeIdCounter),
-      type: Math.random() > 0.5 ? 'male' : 'female',
-      data: generatePersonData('parent'),
+      type: 'person',
+      data: {
+        name: 'New Person',
+        biologicalSex: 'male',
+        birthDate: '',
+        deathDate: '',
+        location: '',
+        occupation: '',
+        notes: ''
+      },
       position: { 
         x: Math.random() * 400 + 100, 
         y: Math.random() * 400 + 100 
@@ -571,6 +689,7 @@ const EditFlow = () => {
               data: {
                 ...node.data,
                 onAddPerson: handleAddPerson,
+                onAddRelative: handleAddRelative,
                 onEdit: handleEditPerson,
                 onDelete: handleDeletePerson,
                 onLink: handleLinkPerson

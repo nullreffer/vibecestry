@@ -1,30 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './PersonEditDialog.css';
 
-const PersonEditDialog = ({ person, isOpen, onSave, onCancel }) => {
+const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     biologicalSex: 'male',
+    relationshipType: 'biological-parent',
     birthDate: '',
     deathDate: '',
     location: '',
     occupation: '',
     notes: ''
   });
-
-  useEffect(() => {
-    if (person) {
-      setFormData({
-        name: person.name || '',
-        biologicalSex: person.biologicalSex || person.data?.biologicalSex || 'male',
-        birthDate: person.birthDate || '',
-        deathDate: person.deathDate || '',
-        location: person.location || '',
-        occupation: person.occupation || '',
-        notes: person.notes || ''
-      });
-    }
-  }, [person]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -36,16 +23,42 @@ const PersonEditDialog = ({ person, isOpen, onSave, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
+    // Reset form
+    setFormData({
+      name: '',
+      biologicalSex: 'male',
+      relationshipType: 'biological-parent',
+      birthDate: '',
+      deathDate: '',
+      location: '',
+      occupation: '',
+      notes: ''
+    });
+  };
+
+  const handleCancel = () => {
+    // Reset form
+    setFormData({
+      name: '',
+      biologicalSex: 'male',
+      relationshipType: 'biological-parent',
+      birthDate: '',
+      deathDate: '',
+      location: '',
+      occupation: '',
+      notes: ''
+    });
+    onCancel();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="dialog-overlay" onClick={onCancel}>
+    <div className="dialog-overlay" onClick={handleCancel}>
       <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
-          <h2>Edit Person Details</h2>
-          <button className="close-button" onClick={onCancel}>×</button>
+          <h2>Add New Relative</h2>
+          <button className="close-button" onClick={handleCancel}>×</button>
         </div>
         
         <form className="dialog-form" onSubmit={handleSubmit}>
@@ -75,15 +88,20 @@ const PersonEditDialog = ({ person, isOpen, onSave, onCancel }) => {
               </select>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="occupation">Occupation</label>
-              <input
-                id="occupation"
-                type="text"
-                value={formData.occupation}
-                onChange={(e) => handleInputChange('occupation', e.target.value)}
-                placeholder="Enter occupation"
-              />
+            <div className="form-group full-width">
+              <label htmlFor="relationshipType">Relationship Type *</label>
+              <select
+                id="relationshipType"
+                value={formData.relationshipType}
+                onChange={(e) => handleInputChange('relationshipType', e.target.value)}
+                required
+              >
+                <option value="biological-parent">Biological Parent</option>
+                <option value="biological-child">Biological Child</option>
+                <option value="adopted-parent">Adopted Parent</option>
+                <option value="adopted-child">Adopted Child</option>
+                <option value="spouse">Spouse</option>
+              </select>
             </div>
 
             <div className="form-group">
@@ -103,6 +121,17 @@ const PersonEditDialog = ({ person, isOpen, onSave, onCancel }) => {
                 type="date"
                 value={formData.deathDate}
                 onChange={(e) => handleInputChange('deathDate', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="occupation">Occupation</label>
+              <input
+                id="occupation"
+                type="text"
+                value={formData.occupation}
+                onChange={(e) => handleInputChange('occupation', e.target.value)}
+                placeholder="Enter occupation"
               />
             </div>
 
@@ -130,11 +159,11 @@ const PersonEditDialog = ({ person, isOpen, onSave, onCancel }) => {
           </div>
 
           <div className="dialog-actions">
-            <button type="button" className="cancel-btn" onClick={onCancel}>
+            <button type="button" className="cancel-btn" onClick={handleCancel}>
               Cancel
             </button>
             <button type="submit" className="save-btn">
-              Save Changes
+              Add Relative
             </button>
           </div>
         </form>
@@ -143,4 +172,4 @@ const PersonEditDialog = ({ person, isOpen, onSave, onCancel }) => {
   );
 };
 
-export default PersonEditDialog;
+export default AddRelativeDialog;
