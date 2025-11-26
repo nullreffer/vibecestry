@@ -53,8 +53,7 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         setUser(null);
         setAuthenticated(false);
-        // Redirect to login
-        login();
+        // Don't automatically redirect to login, let the user see the login page
       }
     } catch (error) {
       console.error('Error logging out:', error);

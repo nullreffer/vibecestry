@@ -96,6 +96,7 @@
   display: flex;
   gap: 8px;
   justify-self: end;
+  align-items: center;
 }
 
 .nav-link {
@@ -112,6 +113,124 @@
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+}
+
+/* User menu styles */
+.user-menu {
+  position: relative;
+  margin-left: 12px;
+}
+
+.user-avatar {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  gap: 8px;
+}
+
+.user-avatar:hover {
+  background-color: #404040;
+}
+
+.user-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #555;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  color: #cccccc;
+  transition: transform 0.2s ease;
+  margin-left: 4px;
+}
+
+.user-avatar:hover .dropdown-arrow {
+  transform: translateY(1px);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  min-width: 220px;
+  margin-top: 8px;
+  overflow: hidden;
+  z-index: 1001;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: inherit;
+  color: #ffffff;
+}
+
+.dropdown-item:hover {
+  background-color: #404040;
+}
+
+.user-info {
+  cursor: default;
+}
+
+.user-info:hover {
+  background-color: transparent;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-full-name {
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.user-email {
+  font-size: 0.8rem;
+  color: #cccccc;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #404040;
+  margin: 4px 0;
+}
+
+.logout-btn {
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background-color: #3d2020;
+}
+
+.logout-btn span {
+  margin-right: 8px;
 }
 
 .nav-link:hover,
@@ -187,6 +306,7 @@
     background-color: #404040;
     border-radius: 8px;
     padding: 12px;
+    align-items: stretch;
   }
   
   .nav-links.mobile-open {
@@ -198,6 +318,30 @@
     justify-content: center;
     font-size: 1rem;
     border-radius: 6px;
+  }
+  
+  .user-menu {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .user-avatar {
+    justify-content: center;
+    padding: 12px 16px;
+    width: 100%;
+  }
+  
+  .user-name {
+    display: block;
+  }
+  
+  .dropdown-menu {
+    position: static;
+    box-shadow: none;
+    border: none;
+    border-radius: 6px;
+    margin-top: 8px;
+    background-color: #555555;
   }
   
   .brand-text {

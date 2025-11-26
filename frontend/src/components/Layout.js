@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const isActive = (path) => {
     return location.pathname === path ? 'nav-link active' : 'nav-link';
@@ -28,6 +31,11 @@ const Layout = ({ children }) => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    setShowUserDropdown(false);
+    logout();
   };
 
   return (
@@ -73,14 +81,35 @@ const Layout = ({ children }) => {
               <span className="nav-icon">➕</span>
               <span className="nav-text">Create</span>
             </Link>
-            <Link 
-              to="/edit" 
-              className={isActive('/edit')}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <span className="nav-icon">✏️</span>
-              <span className="nav-text">Edit</span>
-            </Link>
+            
+            {/* User Menu */}
+            {user && (
+              <div className="user-menu">
+                <div 
+                  className="user-avatar"
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                >
+                  <img src={user.picture} alt={user.name} />
+                  <span className="user-name">{user.name}</span>
+                  <span className="dropdown-arrow">▼</span>
+                </div>
+                
+                {showUserDropdown && (
+                  <div className="dropdown-menu">
+                    <div className="dropdown-item user-info">
+                      <div className="user-details">
+                        <div className="user-full-name">{user.name}</div>
+                        <div className="user-email">{user.email}</div>
+                      </div>
+                    </div>
+                    <div className="dropdown-divider"></div>
+                    <button className="dropdown-item logout-btn" onClick={handleLogout}>
+                      <span>🚪</span> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </nav>

@@ -7,7 +7,6 @@ import AddFlow from './pages/AddFlow';
 import EditFlow from './pages/EditFlow';
 import LoginPage from './components/LoginPage';
 import AuthLoading from './components/AuthLoading';
-import AuthHeader from './components/AuthHeader';
 import './App.css';
 
 // Protected App Component that requires authentication
@@ -23,17 +22,14 @@ const ProtectedApp = () => {
   }
 
   return (
-    <>
-      <AuthHeader />
-      <Layout>
-        <Routes>
-          <Route path="/" element={<FlowList />} />
-          <Route path="/add" element={<AddFlow />} />
-          <Route path="/edit" element={<EditFlow />} />
-          <Route path="/edit/:id" element={<EditFlow />} />
-        </Routes>
-      </Layout>
-    </>
+    <Layout>
+      <Routes>
+        <Route path="/" element={<FlowList />} />
+        <Route path="/add" element={<AddFlow />} />
+        <Route path="/edit" element={<EditFlow />} />
+        <Route path="/edit/:id" element={<EditFlow />} />
+      </Routes>
+    </Layout>
   );
 };
 
