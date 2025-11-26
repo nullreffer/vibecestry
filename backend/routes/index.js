@@ -5,10 +5,12 @@ const router = express.Router();
 const flowsRoutes = require('./flows/flowsRoutes');
 const defaultFlowRoutes = require('./flows/defaultFlowRoutes');
 const nodesRoutes = require('./flows/nodesRoutes');
+const settingsRoutes = require('./settings');
 
-// Mount route modules
+// Mount routes
 router.use('/flows', flowsRoutes);
-router.use('/flow', defaultFlowRoutes);
+router.use('/default-flows', defaultFlowRoutes);
 router.use('/nodes', nodesRoutes);
+router.use('/settings', settingsRoutes);
 
 module.exports = router;

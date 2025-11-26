@@ -233,6 +233,21 @@
   margin-right: 8px;
 }
 
+.settings-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.settings-link:hover {
+  background-color: #404040;
+  color: #ffffff;
+}
+
+.settings-link span {
+  margin-right: 8px;
+}
+
 .nav-link:hover,
 .nav-link:active {
   color: #ffffff;

@@ -103,6 +103,14 @@ const Layout = ({ children }) => {
                       </div>
                     </div>
                     <div className="dropdown-divider"></div>
+                    <Link 
+                      to="/settings" 
+                      className="dropdown-item settings-link"
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <span>⚙️</span> Settings
+                    </Link>
+                    <div className="dropdown-divider"></div>
                     <button className="dropdown-item logout-btn" onClick={handleLogout}>
                       <span>🚪</span> Sign Out
                     </button>
