@@ -1,18 +1,44 @@
+// Load environment variables first
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-require('dotenv').config();
+const session = require('express-session');
+const passport = require('./auth/passport');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+
+// Configure CORS to allow credentials
+const corsOptions = {
+  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : 'http://localhost:3000',
+  credentials: true
+};
+app.use(cors(corsOptions));
+
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.get('/', (req, res) => {
@@ -31,8 +57,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api', require('./routes/index'));
+// Authentication routes
+const { router: authRoutes, requireAuth } = require('./routes/auth');
+app.use('/auth', authRoutes);
+
+// Protected API routes - require authentication
+app.use('/api', requireAuth, require('./routes/index'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,0 +1,151 @@
+.auth-header {
+  background: white;
+  border-bottom: 1px solid #e1e5e9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.auth-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.user-menu {
+  position: relative;
+}
+
+.user-avatar {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.user-avatar:hover {
+  background-color: #f8f9fa;
+}
+
+.user-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 2px solid #e1e5e9;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #333;
+  margin-right: 8px;
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  color: #666;
+  transition: transform 0.2s ease;
+}
+
+.user-avatar:hover .dropdown-arrow {
+  transform: translateY(1px);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 220px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: inherit;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.user-info {
+  cursor: default;
+}
+
+.user-info:hover {
+  background-color: transparent;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-full-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.user-email {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #e1e5e9;
+  margin: 4px 0;
+}
+
+.logout-btn {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background-color: #fff5f5;
+}
+
+.logout-btn span {
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .auth-header-content {
+    padding: 0 15px;
+  }
+  
+  .user-name {
+    display: none;
+  }
+  
+  .dropdown-menu {
+    min-width: 200px;
+  }
+}

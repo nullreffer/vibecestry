@@ -14,6 +14,10 @@ import AddRelativeDialog from '../components/AddRelativeDialog';
 import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import { getEdgeStyleForRelationship } from '../constants/relationships';
+import { RelationshipEdgeService } from '../services/RelationshipEdgeService';
+import { FamilyTreeNodeService } from '../services/FamilyTreeNodeService';
+import { useFamilyTreeOperations } from '../hooks/useFamilyTreeOperations';
+import { useLinkingMode } from '../hooks/useLinkingMode';
 import './EditFlow.css';
 
 // Custom node types for ancestry
@@ -47,6 +51,18 @@ const EditFlow = () => {
   const [isAddRelativeDialogOpen, setIsAddRelativeDialogOpen] = useState(false);
   const [addRelativeSource, setAddRelativeSource] = useState(null);
 
+  // Initialize services
+  const relationshipService = new RelationshipEdgeService();
+  const familyTreeService = new FamilyTreeNodeService();
+
+  // Initialize hooks for family tree operations
+  const familyTreeOps = useFamilyTreeOperations(nodes, setNodes, edges, setEdges, familyTreeService, relationshipService);
+  const linkingMode = useLinkingMode();
+
+  // Simplified handlers using services
+  const handleAddPerson = familyTreeOps.handleAddPerson;
+  const handleDeletePerson = familyTreeOps.handleDeletePerson;
+
   useEffect(() => {
     loadFlow();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,7 +71,9 @@ const EditFlow = () => {
   const loadFlow = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/flows/${id}`);
+      const response = await fetch(`http://localhost:3001/api/flows/${id}`, {
+        credentials: 'include'
+      });
       const result = await response.json();
       
       if (result.success) {
@@ -154,86 +172,6 @@ const EditFlow = () => {
     }
   }, []);
 
-  // Function to handle adding new person
-  const handleAddPerson = useCallback((sourceNodeId, direction) => {
-    const sourceNode = nodes.find(n => n.id === sourceNodeId);
-    if (!sourceNode) return;
-
-    const newNodeId = String(nodeIdCounter);
-    const newPosition = calculateNewPosition(sourceNodeId, direction);
-    const personData = generatePersonData(direction === 'spouse-left' || direction === 'spouse-right' ? 'spouse' : direction);
-    
-    const newNode = {
-      id: newNodeId,
-      type: 'person',
-      data: personData,
-      position: newPosition,
-    };
-
-    // Add the new node
-    setNodes((nds) => nds.concat(newNode));
-    
-    // Get source node gender for relationship labeling
-    const sourceGender = sourceNode.data.biologicalSex || sourceNode.data.gender || 'unknown';
-    const newPersonGender = newNode.data.biologicalSex;
-    
-    // Create connection between nodes
-    let newEdge;
-    switch (direction) {
-      case 'parent':
-        newEdge = {
-          id: `e${newNodeId}-${sourceNodeId}`,
-          source: newNodeId,
-          target: sourceNodeId,
-          type: 'relationship',
-          data: { 
-            label: getRelationshipLabel(direction, newPersonGender, sourceGender),
-            relationshipType: 'parent'
-          },
-          animated: true,
-          style: { stroke: '#6ede87', strokeWidth: 2 }
-        };
-        break;
-      case 'child':
-        newEdge = {
-          id: `e${sourceNodeId}-${newNodeId}`,
-          source: sourceNodeId,
-          target: newNodeId,
-          type: 'relationship',
-          data: { 
-            label: getRelationshipLabel(direction, sourceGender, newPersonGender),
-            relationshipType: 'child'
-          },
-          animated: true,
-          style: { stroke: '#6ede87', strokeWidth: 2 }
-        };
-        break;
-      case 'spouse-left':
-      case 'spouse-right':
-        newEdge = {
-          id: `e${sourceNodeId}-${newNodeId}`,
-          source: sourceNodeId,
-          target: newNodeId,
-          type: 'relationship',
-          data: { 
-            label: getRelationshipLabel(direction, sourceGender, newPersonGender),
-            relationshipType: 'spouse'
-          },
-          animated: false,
-          style: { stroke: '#e24a90', strokeWidth: 3, strokeDasharray: '5,5' }
-        };
-        break;
-      default:
-        break;
-    }
-
-    if (newEdge) {
-      setEdges((eds) => eds.concat(newEdge));
-    }
-
-    setNodeIdCounter(prev => prev + 1);
-  }, [nodes, nodeIdCounter]);
-
   const handleAddRelative = useCallback((sourceId, sourceData) => {
     setAddRelativeSource({ id: sourceId, ...sourceData });
     setIsAddRelativeDialogOpen(true);
@@ -298,24 +236,16 @@ const EditFlow = () => {
     }
   }, [isLinkingMode, linkingSourceId]);
 
-  // Handle saving link relationship
+  // Handle saving link relationship - simplified using service
   const handleSaveLinkRelationship = useCallback((relationshipType) => {
     if (linkingSourceId && linkingTargetId) {
-      // Get edge styling based on relationship type using constants
-      const edgeStyle = getEdgeStyleForRelationship(relationshipType);
-      const edgeLabel = relationshipType;
-
-      // Create relationship edge between the two nodes
-      const newEdge = {
-        id: `edge-${linkingSourceId}-${linkingTargetId}-${Date.now()}`,
-        source: linkingSourceId,
-        target: linkingTargetId,
-        label: edgeLabel,
-        type: 'smoothstep',
-        style: edgeStyle
-      };
-
-      setEdges((eds) => [...eds, newEdge]);
+      const sourceNode = nodes.find(n => n.id === linkingSourceId);
+      const targetNode = nodes.find(n => n.id === linkingTargetId);
+      
+      if (sourceNode && targetNode) {
+        const newEdge = relationshipService.createEdge(sourceNode, targetNode, relationshipType);
+        setEdges((eds) => [...eds, newEdge]);
+      }
     }
 
     // Reset linking state
@@ -325,7 +255,7 @@ const EditFlow = () => {
     setLinkingTargetId(null);
     setLinkingTargetData(null);
     setIsLinkRelationshipDialogOpen(false);
-  }, [linkingSourceId, linkingTargetId]);
+  }, [linkingSourceId, linkingTargetId, nodes, relationshipService, setEdges]);
 
   // Handle cancel linking
   const handleCancelLinking = useCallback(() => {
@@ -343,121 +273,19 @@ const EditFlow = () => {
     setEditingPerson(null);
   }, []);
 
-  // Handle deleting a person
-  const handleDeletePerson = useCallback((personId) => {
-    if (window.confirm('Are you sure you want to delete this person?')) {
-      setNodes((nds) => nds.filter(node => node.id !== personId));
-      setEdges((eds) => eds.filter(edge => edge.source !== personId && edge.target !== personId));
-    }
-  }, [setNodes, setEdges]);
-
-  // Handle saving added relative
+  // Handle saving added relative - simplified using service
   const handleSaveAddedRelative = useCallback((relativeData) => {
     if (!addRelativeSource) return;
 
     const sourceNode = nodes.find(node => node.id === addRelativeSource.id);
     if (!sourceNode) return;
 
-    const newId = `${Date.now()}`;
-    const newPersonGender = relativeData.biologicalSex;
-    const sourceGender = sourceNode.data.biologicalSex || 'unknown';
-
-    // Create new person node
-    const newNode = {
-      id: newId,
-      type: 'person',
-      position: { 
-        x: sourceNode.position.x + 200, 
-        y: sourceNode.position.y + (Math.random() - 0.5) * 200 
-      },
-      data: {
-        name: relativeData.name,
-        biologicalSex: relativeData.biologicalSex,
-        birthDate: relativeData.birthDate,
-        deathDate: relativeData.deathDate,
-        location: relativeData.location,
-        occupation: relativeData.occupation,
-        notes: relativeData.notes,
-      },
-    };
-
-    // Create edge based on relationship type
-    let edgeConfig = null;
-    switch (relativeData.relationshipType) {
-      case 'biological-parent':
-        edgeConfig = {
-          id: `edge-${newId}-${addRelativeSource.id}`,
-          source: newId,
-          target: addRelativeSource.id,
-          label: newPersonGender === 'male' ? 'Father' : 'Mother',
-          type: 'smoothstep',
-          style: { 
-            stroke: '#6ede87', 
-            strokeWidth: 2,
-            strokeDasharray: 'none'
-          }
-        };
-        break;
-      case 'adopted-parent':
-        edgeConfig = {
-          id: `edge-${newId}-${addRelativeSource.id}`,
-          source: newId,
-          target: addRelativeSource.id,
-          label: newPersonGender === 'male' ? 'Adoptive Father' : 'Adoptive Mother',
-          type: 'smoothstep',
-          style: { 
-            stroke: '#ffa500', 
-            strokeWidth: 2,
-            strokeDasharray: '5,5'
-          }
-        };
-        break;
-      case 'biological-child':
-        edgeConfig = {
-          id: `edge-${addRelativeSource.id}-${newId}`,
-          source: addRelativeSource.id,
-          target: newId,
-          label: newPersonGender === 'male' ? 'Son' : 'Daughter',
-          type: 'smoothstep',
-          style: { 
-            stroke: '#6ede87', 
-            strokeWidth: 2,
-            strokeDasharray: 'none'
-          }
-        };
-        break;
-      case 'adopted-child':
-        edgeConfig = {
-          id: `edge-${addRelativeSource.id}-${newId}`,
-          source: addRelativeSource.id,
-          target: newId,
-          label: newPersonGender === 'male' ? 'Adopted Son' : 'Adopted Daughter',
-          type: 'smoothstep',
-          style: { 
-            stroke: '#ffa500', 
-            strokeWidth: 2,
-            strokeDasharray: '5,5'
-          }
-        };
-        break;
-      case 'spouse':
-        edgeConfig = {
-          id: `edge-${newId}-${addRelativeSource.id}`,
-          source: newId,
-          target: addRelativeSource.id,
-          label: sourceGender === 'male' && newPersonGender === 'female' ? 'Wife' : 
-                 sourceGender === 'female' && newPersonGender === 'male' ? 'Husband' : 'Spouse',
-          type: 'smoothstep',
-          style: { 
-            stroke: '#e24a90', 
-            strokeWidth: 2,
-            strokeDasharray: '3,3'
-          }
-        };
-        break;
-      default:
-        break;
-    }
+    // Use service to add relative
+    const { newNode, edgeConfig } = familyTreeService.addRelative(
+      sourceNode, 
+      relativeData, 
+      `${Date.now()}`
+    );
 
     // Add the node and edge
     setNodes((nds) => [...nds, newNode]);
@@ -468,7 +296,7 @@ const EditFlow = () => {
     // Close dialog
     setIsAddRelativeDialogOpen(false);
     setAddRelativeSource(null);
-  }, [addRelativeSource, nodes, setNodes, setEdges]);
+  }, [addRelativeSource, nodes, setNodes, setEdges, familyTreeService]);
 
   // Handle canceling add relative
   const handleCancelAddRelative = useCallback(() => {
@@ -491,6 +319,7 @@ const EditFlow = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: flowName,
           description: flowDescription,

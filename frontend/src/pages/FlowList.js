@@ -14,7 +14,9 @@ const FlowList = () => {
   const fetchFlows = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/flows');
+      const response = await fetch('http://localhost:3001/api/flows', {
+        credentials: 'include'
+      });
       const result = await response.json();
       
       if (result.success) {
@@ -36,6 +38,7 @@ const FlowList = () => {
       try {
         const response = await fetch(`http://localhost:3001/api/flows/${flowId}`, {
           method: 'DELETE',
+          credentials: 'include'
         });
         const result = await response.json();
         
