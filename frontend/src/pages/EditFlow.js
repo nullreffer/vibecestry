@@ -60,6 +60,19 @@ const EditFlow = () => {
   const familyTreeOps = useFamilyTreeOperations(nodes, edges, setNodes, setEdges);
   const linkingMode = useLinkingMode();
 
+  // Handle editing a person (moved early to avoid use-before-define)
+  const handleEditPerson = useCallback((personId, personData) => {
+    setEditingPerson({ id: personId, ...personData });
+    setIsEditDialogOpen(true);
+  }, []);
+
+  // Handle link relative button click (moved early to avoid use-before-define)
+  const handleLinkRelative = useCallback((sourceId, sourceData) => {
+    setIsLinkingMode(true);
+    setLinkingSourceId(sourceId);
+    setLinkingSourceData(sourceData);
+  }, []);
+
   // Simplified handlers using services
   const handleAddPerson = familyTreeOps.handleAddPerson;
   const handleDeletePerson = familyTreeOps.handleDeletePerson;
@@ -399,12 +412,6 @@ const EditFlow = () => {
     setNodeIdCounter(prev => prev + 1);
   };
 
-  // Handle editing a person
-  const handleEditPerson = useCallback((personId, personData) => {
-    setEditingPerson({ id: personId, ...personData });
-    setIsEditDialogOpen(true);
-  }, []);
-
   // Handle saving edited person data
   const handleSaveEditedPerson = useCallback((editedData) => {
     if (editingPerson) {
@@ -443,13 +450,6 @@ const EditFlow = () => {
     setIsEditDialogOpen(false);
     setEditingPerson(null);
   }, [editingPerson]);
-
-  // Handle link relative button click
-  const handleLinkRelative = useCallback((sourceId, sourceData) => {
-    setIsLinkingMode(true);
-    setLinkingSourceId(sourceId);
-    setLinkingSourceData(sourceData);
-  }, []);
 
   // Handle target node click during linking
   const handleNodeClickForLinking = useCallback((event, clickedNode) => {
@@ -518,11 +518,6 @@ const EditFlow = () => {
   // Handle creating/editing marriage
   const handleCreateMarriage = useCallback(() => {
     setEditingMarriage(null);
-    setIsMarriageEditDialogOpen(true);
-  }, []);
-
-  const handleEditMarriage = useCallback((marriageId, marriageData) => {
-    setEditingMarriage({ id: marriageId, ...marriageData });
     setIsMarriageEditDialogOpen(true);
   }, []);
 
@@ -668,58 +663,6 @@ const EditFlow = () => {
   const handleCancelMarriage = useCallback(() => {
     setIsMarriageEditDialogOpen(false);
     setEditingMarriage(null);
-  }, []);
-
-  const handleAddChildToMarriage = useCallback((marriageId, marriageData) => {
-    // Create a new child person and show edit dialog
-    const childId = `person-${Date.now()}-child`;
-    const newChild = {
-      id: childId,
-      type: 'person',
-      data: {
-        name: 'New Child',
-        biologicalSex: 'male',
-        birthDate: '',
-        deathDate: '',
-        location: '',
-        occupation: '',
-        notes: ''
-      },
-      position: { x: 300, y: 400 }
-    };
-    
-    // Add the child node
-    setNodes(nodes => [...nodes, newChild]);
-    
-    // Create edge from marriage to child
-    const childEdge = {
-      id: `edge-${marriageId}-${childId}`,
-      source: marriageId,
-      target: childId,
-      type: 'relationship',
-      data: {
-        relationshipType: 'PARENT_CHILD',
-        sourceLabel: 'parents of',
-        targetLabel: 'child of',
-        isDirectional: true
-      }
-    };
-    
-    setEdges(edges => [...edges, childEdge]);
-    
-    // Open edit dialog for the new child
-    setEditingPerson({ id: childId, ...newChild.data });
-    setIsEditDialogOpen(true);
-    
-    // Update node counter
-    setNodeIdCounter(prev => prev + 1);
-  }, []);
-
-  const handleDeleteMarriage = useCallback((marriageId) => {
-    if (window.confirm('Are you sure you want to delete this marriage?')) {
-      setNodes(nodes => nodes.filter(node => node.id !== marriageId));
-      // TODO: Also delete related edges
-    }
   }, []);
 
 
