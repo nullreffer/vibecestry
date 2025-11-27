@@ -1,2 +1,28 @@
 node_modules
 package-lock.json
+
+# Android build files
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/gradle.properties.local
+android/keystore.properties
+
+# Android Studio files
+android/.idea/
+android/*.iml
+android/.externalNativeBuild/
+android/.cxx/
+
+# Generated files
+android/app/src/main/assets/
+android/app/src/main/res/drawable-*/
+android/app/src/main/res/raw/
+
+# Gradle cache
+.gradle/
+build/
+
+# React Native
+metro.config.js.bak

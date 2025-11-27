@@ -728,12 +728,54 @@ const EditFlow = () => {
     const marriageId = editingMarriage?.id || `marriage-${Date.now()}`;
     
     if (editingMarriage) {
-      // Update existing marriage
+      // Update existing marriage - need to handle edge updates if person IDs changed
+      const oldMarriageData = nodes.find(n => n.id === marriageId)?.data;
+      const oldHusbandId = oldMarriageData?.husbandId;
+      const oldWifeId = oldMarriageData?.wifeId;
+      const newHusbandId = marriageData.husbandId;
+      const newWifeId = marriageData.wifeId;
+      
+      // Update marriage node
       setNodes(nodes => nodes.map(node => 
         node.id === marriageId 
           ? { ...node, data: { ...node.data, ...marriageData } }
           : node
       ));
+      
+      // Update edges if person IDs changed
+      setEdges(currentEdges => {
+        return currentEdges.map(edge => {
+          // Update husband edge if husband ID changed
+          if (edge.source === oldHusbandId && edge.target === marriageId && oldHusbandId !== newHusbandId) {
+            return {
+              ...edge,
+              source: newHusbandId,
+              id: `edge-${newHusbandId}-${marriageId}`,
+              data: {
+                ...edge.data,
+                sourceLabel: 'husband of',
+                targetLabel: 'spouse of'
+              }
+            };
+          }
+          
+          // Update wife edge if wife ID changed  
+          if (edge.source === oldWifeId && edge.target === marriageId && oldWifeId !== newWifeId) {
+            return {
+              ...edge,
+              source: newWifeId,
+              id: `edge-${newWifeId}-${marriageId}`,
+              data: {
+                ...edge.data,
+                sourceLabel: 'wife of',
+                targetLabel: 'spouse of'
+              }
+            };
+          }
+          
+          return edge;
+        });
+      });
     } else {
       // Get the source person (who triggered adding spouse)
       const sourcePerson = addRelativeSource ? nodes.find(n => n.id === addRelativeSource.id) : null;

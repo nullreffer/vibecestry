@@ -34,7 +34,17 @@ const RelationshipEdge = ({
 
   const handleEdgeClick = (event) => {
     event.stopPropagation();
-    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+    
+    // Calculate position relative to the edge center instead of using global coordinates
+    const [edgeCenterX, edgeCenterY] = getEdgeCenter({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+    });
+    
+    // Position context menu near the edge center
+    setContextMenuPosition({ x: edgeCenterX, y: edgeCenterY });
     setShowContextMenu(true);
   };
 
@@ -180,8 +190,8 @@ const RelationshipEdge = ({
       {/* Context Menu */}
       {showContextMenu && (
         <foreignObject
-          x={contextMenuPosition.x - sourceX}
-          y={contextMenuPosition.y - sourceY}
+          x={contextMenuPosition.x - 75} // Center the 150px wide menu
+          y={contextMenuPosition.y + 20} // Position below the click point
           width="150"
           height="80"
           className="edge-context-menu"
