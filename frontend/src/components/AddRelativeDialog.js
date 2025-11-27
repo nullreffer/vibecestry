@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { getRelationshipOptions, RELATIONSHIP_TYPES } from '../constants/relationships';
+import { getSimplifiedRelationshipOptions, RELATIONSHIP_TYPES } from '../constants/relationships';
 import './PersonEditDialog.css';
 
 const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     biologicalSex: 'male',
-    relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT,
+    relationshipType: 'biological-parent',
     birthDate: '',
     deathDate: '',
     location: '',
@@ -23,12 +23,31 @@ const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Find the selected relationship option to get the actual relationship type
+    const selectedOption = getSimplifiedRelationshipOptions().find(option => option.value === formData.relationshipType);
+    const actualRelationshipType = selectedOption ? selectedOption.relationshipType : RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD;
+    
+    // Determine the direction for parent-child relationships
+    let relationshipDirection = 'bidirectional';
+    if (formData.relationshipType.includes('parent')) {
+      relationshipDirection = 'parent-to-child';
+    } else if (formData.relationshipType.includes('child')) {
+      relationshipDirection = 'child-to-parent';
+    }
+    
+    const dataToSave = {
+      ...formData,
+      relationshipType: actualRelationshipType,
+      relationshipDirection
+    };
+    
+    onSave(dataToSave);
     // Reset form
     setFormData({
       name: '',
       biologicalSex: 'male',
-      relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT,
+      relationshipType: 'biological-parent',
       birthDate: '',
       deathDate: '',
       location: '',
@@ -42,7 +61,7 @@ const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
     setFormData({
       name: '',
       biologicalSex: 'male',
-      relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT,
+      relationshipType: 'biological-parent',
       birthDate: '',
       deathDate: '',
       location: '',
@@ -90,14 +109,14 @@ const AddRelativeDialog = ({ isOpen, onSave, onCancel }) => {
             </div>
 
             <div className="form-group full-width">
-              <label htmlFor="relationshipType">Relationship Type *</label>
+              <label htmlFor="relationshipType">Relationship *</label>
               <select
                 id="relationshipType"
                 value={formData.relationshipType}
                 onChange={(e) => handleInputChange('relationshipType', e.target.value)}
                 required
               >
-                {getRelationshipOptions().map(option => (
+                {getSimplifiedRelationshipOptions().map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

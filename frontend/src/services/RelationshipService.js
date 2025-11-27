@@ -1,4 +1,4 @@
-import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship, RELATIONSHIP_LABELS } from '../constants/relationships';
+import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship, RELATIONSHIP_LABELS, getDualLabels, mapLegacyRelationshipType } from '../constants/relationships';
 
 /**
  * Business logic service for handling family tree relationships
@@ -11,47 +11,41 @@ export class RelationshipService {
   static getRelationshipLabel(relationshipType, sourcePersonData) {
     if (!sourcePersonData) return 'Unknown';
     
+    // Map legacy relationship types
+    const mappedType = mapLegacyRelationshipType(relationshipType);
     const isMale = sourcePersonData.biologicalSex === 'male';
     
-    switch (relationshipType) {
-      case RELATIONSHIP_TYPES.BIOLOGICAL_PARENT:
+    switch (mappedType) {
+      case RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD:
         return isMale ? 'Father' : 'Mother';
-      case RELATIONSHIP_TYPES.ADOPTIVE_PARENT:
+      case RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD:
         return isMale ? 'Adoptive Father' : 'Adoptive Mother';
-      case RELATIONSHIP_TYPES.STEPPARENT:
-        return isMale ? 'Stepfather' : 'Stepmother';
       case RELATIONSHIP_TYPES.SPOUSE:
         return isMale ? 'Husband' : 'Wife';
       case RELATIONSHIP_TYPES.SIBLING:
         return isMale ? 'Brother' : 'Sister';
-      case RELATIONSHIP_TYPES.HALF_SIBLING:
-        return isMale ? 'Half-Brother' : 'Half-Sister';
-      case RELATIONSHIP_TYPES.STEP_SIBLING:
-        return isMale ? 'Step-Brother' : 'Step-Sister';
-      case RELATIONSHIP_TYPES.CHILD:
-        return isMale ? 'Son' : 'Daughter';
-      case RELATIONSHIP_TYPES.GRANDPARENT:
-        return isMale ? 'Grandfather' : 'Grandmother';
-      case RELATIONSHIP_TYPES.GRANDCHILD:
-        return isMale ? 'Grandson' : 'Granddaughter';
-      case RELATIONSHIP_TYPES.UNCLE_AUNT:
-        return isMale ? 'Uncle' : 'Aunt';
-      case RELATIONSHIP_TYPES.NEPHEW_NIECE:
-        return isMale ? 'Nephew' : 'Niece';
-      case RELATIONSHIP_TYPES.COUSIN:
-        return 'Cousin';
       default:
-        return RELATIONSHIP_LABELS[relationshipType] || 'Unknown';
+        return RELATIONSHIP_LABELS[mappedType] || 'Related';
     }
   }
 
   /**
    * Create a new edge with proper styling and labeling
    */
-  static createRelationshipEdge(sourceId, targetId, relationshipType, sourcePersonData) {
+  static createRelationshipEdge(sourceId, targetId, relationshipType, sourcePersonData, targetPersonData) {
     const edgeId = `e${sourceId}-${targetId}`;
-    const label = this.getRelationshipLabel(relationshipType, sourcePersonData);
-    const style = getEdgeStyleForRelationship(relationshipType);
+    
+    // Map legacy relationship types
+    const mappedType = mapLegacyRelationshipType(relationshipType);
+    
+    const style = getEdgeStyleForRelationship(mappedType);
+
+    // Get dual labels based on the relationship type and person genders
+    const { sourceLabel, targetLabel } = getDualLabels(
+      mappedType, 
+      sourcePersonData, 
+      targetPersonData
+    );
 
     return {
       id: edgeId,
@@ -59,10 +53,13 @@ export class RelationshipService {
       target: targetId,
       type: 'relationship',
       data: { 
-        label, 
-        relationshipType 
+        sourceLabel,
+        targetLabel,
+        relationshipType: mappedType,
+        // Keep legacy label for backwards compatibility
+        label: sourceLabel || this.getRelationshipLabel(mappedType, sourcePersonData)
       },
-      ...style
+      style: style
     };
   }
 
@@ -71,19 +68,10 @@ export class RelationshipService {
    */
   static getRelationshipOptions() {
     return [
-      { value: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT, label: 'Biological Parent' },
-      { value: RELATIONSHIP_TYPES.ADOPTIVE_PARENT, label: 'Adoptive Parent' },
-      { value: RELATIONSHIP_TYPES.STEPPARENT, label: 'Step Parent' },
-      { value: RELATIONSHIP_TYPES.SPOUSE, label: 'Spouse' },
-      { value: RELATIONSHIP_TYPES.SIBLING, label: 'Sibling' },
-      { value: RELATIONSHIP_TYPES.HALF_SIBLING, label: 'Half Sibling' },
-      { value: RELATIONSHIP_TYPES.STEP_SIBLING, label: 'Step Sibling' },
-      { value: RELATIONSHIP_TYPES.CHILD, label: 'Child' },
-      { value: RELATIONSHIP_TYPES.GRANDPARENT, label: 'Grandparent' },
-      { value: RELATIONSHIP_TYPES.GRANDCHILD, label: 'Grandchild' },
-      { value: RELATIONSHIP_TYPES.UNCLE_AUNT, label: 'Uncle/Aunt' },
-      { value: RELATIONSHIP_TYPES.NEPHEW_NIECE, label: 'Nephew/Niece' },
-      { value: RELATIONSHIP_TYPES.COUSIN, label: 'Cousin' },
+      { value: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD] },
+      { value: RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD] },
+      { value: RELATIONSHIP_TYPES.SPOUSE, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.SPOUSE] },
+      { value: RELATIONSHIP_TYPES.SIBLING, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.SIBLING] }
     ];
   }
 
@@ -115,13 +103,17 @@ export class RelationshipService {
     if (!person1 || !person2) return false;
     if (person1.id === person2.id) return false;
     
+    // Map legacy relationship types
+    const mappedType = mapLegacyRelationshipType(relationshipType);
+    
     // Example: Basic age validation for parent-child relationships
-    if (relationshipType === RELATIONSHIP_TYPES.BIOLOGICAL_PARENT) {
+    if (mappedType === RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD || 
+        mappedType === RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD) {
       const age1 = this.calculateAge(person1.data.birthDate);
       const age2 = this.calculateAge(person2.data.birthDate);
       
       // Parent should be older than child
-      return age1 > age2;
+      return Math.abs(age1 - age2) > 0; // Allow if there's an age difference
     }
     
     return true;

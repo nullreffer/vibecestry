@@ -37,8 +37,8 @@ export class PositionUtils {
     // Find parent relationships
     const parentEdges = edges.filter(edge => 
       edge.target === personId && 
-      (edge.data.relationshipType === 'biological-parent' || 
-       edge.data.relationshipType === 'adoptive-parent')
+      (edge.data.relationshipType === 'biological-parent-child' || 
+       edge.data.relationshipType === 'adopted-parent-child')
     );
     
     if (parentEdges.length > 0) {

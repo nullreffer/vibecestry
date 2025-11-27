@@ -51,12 +51,8 @@ const EditFlow = () => {
   const [isAddRelativeDialogOpen, setIsAddRelativeDialogOpen] = useState(false);
   const [addRelativeSource, setAddRelativeSource] = useState(null);
 
-  // Initialize services
-  const relationshipService = new RelationshipEdgeService();
-  const familyTreeService = new FamilyTreeNodeService();
-
   // Initialize hooks for family tree operations
-  const familyTreeOps = useFamilyTreeOperations(nodes, setNodes, edges, setEdges, familyTreeService, relationshipService);
+  const familyTreeOps = useFamilyTreeOperations(nodes, edges, setNodes, setEdges);
   const linkingMode = useLinkingMode();
 
   // Simplified handlers using services
@@ -104,10 +100,11 @@ const EditFlow = () => {
     [setEdges]
   );
 
-  const onConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge({ ...connection, animated: true }, eds)),
-    [setEdges]
-  );
+  // Disable manual edge creation - edges should only be created through Add Relative or Link Relative
+  const onConnect = useCallback(() => {
+    // Prevent manual edge creation
+    console.log('Manual edge creation disabled. Use Add Relative or Link Relative buttons.');
+  }, []);
 
   // Function to generate new person data
   const generatePersonData = (relationship) => {
@@ -237,15 +234,15 @@ const EditFlow = () => {
   }, [isLinkingMode, linkingSourceId]);
 
   // Handle saving link relationship - simplified using service
-  const handleSaveLinkRelationship = useCallback((relationshipType) => {
+  const handleSaveLinkRelationship = useCallback((relationshipData) => {
     if (linkingSourceId && linkingTargetId) {
-      const sourceNode = nodes.find(n => n.id === linkingSourceId);
-      const targetNode = nodes.find(n => n.id === linkingTargetId);
+      // Extract relationship type from the object
+      const relationshipType = typeof relationshipData === 'object' 
+        ? relationshipData.relationshipType 
+        : relationshipData;
       
-      if (sourceNode && targetNode) {
-        const newEdge = relationshipService.createEdge(sourceNode, targetNode, relationshipType);
-        setEdges((eds) => [...eds, newEdge]);
-      }
+      // Use service to create link through the hook
+      familyTreeOps.handleCreateLink(linkingSourceId, linkingTargetId, relationshipType, relationshipData);
     }
 
     // Reset linking state
@@ -255,7 +252,7 @@ const EditFlow = () => {
     setLinkingTargetId(null);
     setLinkingTargetData(null);
     setIsLinkRelationshipDialogOpen(false);
-  }, [linkingSourceId, linkingTargetId, nodes, relationshipService, setEdges]);
+  }, [linkingSourceId, linkingTargetId, familyTreeOps]);
 
   // Handle cancel linking
   const handleCancelLinking = useCallback(() => {
@@ -277,26 +274,13 @@ const EditFlow = () => {
   const handleSaveAddedRelative = useCallback((relativeData) => {
     if (!addRelativeSource) return;
 
-    const sourceNode = nodes.find(node => node.id === addRelativeSource.id);
-    if (!sourceNode) return;
-
-    // Use service to add relative
-    const { newNode, edgeConfig } = familyTreeService.addRelative(
-      sourceNode, 
-      relativeData, 
-      `${Date.now()}`
-    );
-
-    // Add the node and edge
-    setNodes((nds) => [...nds, newNode]);
-    if (edgeConfig) {
-      setEdges((eds) => [...eds, edgeConfig]);
-    }
+    // Use service to add relative through the hook
+    familyTreeOps.handleAddRelative(addRelativeSource.id, relativeData);
 
     // Close dialog
     setIsAddRelativeDialogOpen(false);
     setAddRelativeSource(null);
-  }, [addRelativeSource, nodes, setNodes, setEdges, familyTreeService]);
+  }, [addRelativeSource, familyTreeOps]);
 
   // Handle canceling add relative
   const handleCancelAddRelative = useCallback(() => {
@@ -475,6 +459,8 @@ const EditFlow = () => {
             onNodeClick={handleNodeClickForLinking}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            connectOnClick={false}
+            connectionMode="strict"
             fitView
             style={{ background: '#1a1a1a' }}
             defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
@@ -537,8 +523,8 @@ const EditFlow = () => {
 
       <LinkRelationshipDialog
         isOpen={isLinkRelationshipDialogOpen}
-        sourcePersonData={linkingSourceData}
-        targetPersonData={linkingTargetData}
+        sourcePerson={linkingSourceData}
+        targetPerson={linkingTargetData}
         onSave={handleSaveLinkRelationship}
         onCancel={handleCancelLinking}
       />

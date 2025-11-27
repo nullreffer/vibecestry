@@ -73,34 +73,37 @@ export class FamilyTreeNodeService {
    * Add a relative with specific data
    */
   static addRelative(parentNodeId, relativeData, existingNodes, existingEdges) {
-    const parentNode = existingNodes.find(node => node.id === parentNodeId);
+    // Ensure we have valid arrays to work with
+    const safeNodes = Array.isArray(existingNodes) ? existingNodes : [];
+    const safeEdges = Array.isArray(existingEdges) ? existingEdges : [];
+    
+    const parentNode = safeNodes.find(node => node.id === parentNodeId);
     if (!parentNode) return null;
 
     const newId = `${Date.now()}`;
-    const parentGeneration = PositionUtils.getPersonGeneration(parentNodeId, existingNodes, existingEdges);
+    const parentGeneration = PositionUtils.getPersonGeneration(parentNodeId, safeNodes, safeEdges);
     
     let newGeneration;
     let direction;
     
-    // Map relationship type to direction and generation
-    switch (relativeData.relationshipType) {
-      case RELATIONSHIP_TYPES.BIOLOGICAL_PARENT:
-      case RELATIONSHIP_TYPES.ADOPTIVE_PARENT:
-      case RELATIONSHIP_TYPES.STEPPARENT:
-        direction = 'parent';
-        newGeneration = parentGeneration + 1;
-        break;
-      case RELATIONSHIP_TYPES.CHILD:
-        direction = 'child';
-        newGeneration = parentGeneration - 1;
-        break;
-      case RELATIONSHIP_TYPES.SPOUSE:
-        direction = 'spouse';
-        newGeneration = parentGeneration;
-        break;
-      default:
-        direction = 'sibling';
-        newGeneration = parentGeneration;
+    // Map relationship type and direction from the simplified dialog
+    const relationshipDirection = relativeData.relationshipDirection || 'bidirectional';
+    
+    if (relationshipDirection === 'parent-to-child') {
+      // Parent being added to the current person
+      direction = 'parent';
+      newGeneration = parentGeneration + 1;
+    } else if (relationshipDirection === 'child-to-parent') {
+      // Child being added to the current person
+      direction = 'child';
+      newGeneration = parentGeneration - 1;
+    } else if (relativeData.relationshipType === RELATIONSHIP_TYPES.SPOUSE) {
+      direction = 'spouse';
+      newGeneration = parentGeneration;
+    } else {
+      // Default to sibling
+      direction = 'sibling';
+      newGeneration = parentGeneration;
     }
     
     const newPosition = PositionUtils.calculateNewPosition(parentNodeId, direction, existingNodes);
@@ -140,22 +143,26 @@ export class FamilyTreeNodeService {
   /**
    * Create a link between two existing nodes
    */
-  static createLink(sourceId, targetId, relationshipType, existingNodes) {
+  static createLink(sourceId, targetId, relationshipType, existingNodes, relationshipData = null) {
     const sourceNode = existingNodes.find(n => n.id === sourceId);
     const targetNode = existingNodes.find(n => n.id === targetId);
     
     if (!sourceNode || !targetNode) return null;
 
-    // Create the relationship edge
+    // Determine direction for dual labels
+    let direction = 'bidirectional';
+    if (relationshipData && relationshipData.relationshipDirection) {
+      direction = relationshipData.relationshipDirection;
+    }
+
+    // Create the relationship edge with direction context
     const newEdge = RelationshipEdgeService.createEdge(
       sourceId,
       targetId,
       relationshipType,
       sourceNode.data,
       targetNode.data,
-      {
-        // Handle positions will be determined by the relationship type
-      }
+      direction
     );
 
     return newEdge;
@@ -176,8 +183,12 @@ export class FamilyTreeNodeService {
    * Delete a person and all their relationships
    */
   static deletePerson(personId, existingNodes, existingEdges) {
-    const updatedNodes = existingNodes.filter(node => node.id !== personId);
-    const updatedEdges = existingEdges.filter(edge => 
+    // Ensure we have valid arrays to work with
+    const safeNodes = Array.isArray(existingNodes) ? existingNodes : [];
+    const safeEdges = Array.isArray(existingEdges) ? existingEdges : [];
+    
+    const updatedNodes = safeNodes.filter(node => node.id !== personId);
+    const updatedEdges = safeEdges.filter(edge => 
       edge.source !== personId && edge.target !== personId
     );
 
@@ -198,10 +209,14 @@ export class FamilyTreeNodeService {
    * Get family statistics
    */
   static getFamilyStatistics(nodes, edges) {
+    // Ensure we have valid arrays to work with
+    const safeNodes = Array.isArray(nodes) ? nodes : [];
+    const safeEdges = Array.isArray(edges) ? edges : [];
+    
     const generations = new Map();
     
-    nodes.forEach(node => {
-      const generation = PositionUtils.getPersonGeneration(node.id, nodes, edges);
+    safeNodes.forEach(node => {
+      const generation = PositionUtils.getPersonGeneration(node.id, safeNodes, safeEdges);
       if (!generations.has(generation)) {
         generations.set(generation, []);
       }
@@ -209,14 +224,14 @@ export class FamilyTreeNodeService {
     });
 
     const relationships = new Map();
-    edges.forEach(edge => {
-      const type = edge.data.relationshipType;
+    safeEdges.forEach(edge => {
+      const type = edge.data?.relationshipType || 'unknown';
       relationships.set(type, (relationships.get(type) || 0) + 1);
     });
 
     return {
-      totalPeople: nodes.length,
-      totalRelationships: edges.length,
+      totalPeople: safeNodes.length,
+      totalRelationships: safeEdges.length,
       generations: generations.size,
       generationBreakdown: Object.fromEntries(generations),
       relationshipBreakdown: Object.fromEntries(relationships)
@@ -227,17 +242,23 @@ export class FamilyTreeNodeService {
    * Validate family tree structure
    */
   static validateFamilyTree(nodes, edges) {
+    // Ensure we have valid arrays to work with
+    const safeNodes = Array.isArray(nodes) ? nodes : [];
+    const safeEdges = Array.isArray(edges) ? edges : [];
+    
     const errors = [];
     const warnings = [];
 
     // Check for orphaned nodes
     const connectedNodeIds = new Set();
-    edges.forEach(edge => {
-      connectedNodeIds.add(edge.source);
-      connectedNodeIds.add(edge.target);
+    safeEdges.forEach(edge => {
+      if (edge && edge.source && edge.target) {
+        connectedNodeIds.add(edge.source);
+        connectedNodeIds.add(edge.target);
+      }
     });
 
-    const orphanedNodes = nodes.filter(node => !connectedNodeIds.has(node.id));
+    const orphanedNodes = safeNodes.filter(node => !connectedNodeIds.has(node.id));
     if (orphanedNodes.length > 1) {
       warnings.push(`${orphanedNodes.length} people are not connected to the family tree`);
     }
@@ -245,13 +266,15 @@ export class FamilyTreeNodeService {
     // Check for circular relationships
     // (This is a simplified check - a full implementation would need more sophisticated cycle detection)
     const relationshipCounts = new Map();
-    edges.forEach(edge => {
-      const key = `${edge.source}-${edge.target}`;
-      const reverseKey = `${edge.target}-${edge.source}`;
-      if (relationshipCounts.has(reverseKey)) {
-        errors.push('Circular relationship detected');
+    safeEdges.forEach(edge => {
+      if (edge && edge.source && edge.target) {
+        const key = `${edge.source}-${edge.target}`;
+        const reverseKey = `${edge.target}-${edge.source}`;
+        if (relationshipCounts.has(reverseKey)) {
+          errors.push('Circular relationship detected');
+        }
+        relationshipCounts.set(key, (relationshipCounts.get(key) || 0) + 1);
       }
-      relationshipCounts.set(key, true);
     });
 
     return {

@@ -1,4 +1,4 @@
-import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship } from '../constants/relationships';
+import { RELATIONSHIP_TYPES, getEdgeStyleForRelationship, getDualLabels, mapLegacyRelationshipType } from '../constants/relationships';
 
 /**
  * Enhanced service for creating and managing family tree relationships
@@ -10,9 +10,20 @@ export class RelationshipEdgeService {
    */
   static createEdge(sourceId, targetId, relationshipType, sourcePersonData, targetPersonData, options = {}) {
     const edgeId = options.edgeId || `edge-${sourceId}-${targetId}`;
-    const label = this.getRelationshipLabel(relationshipType, sourcePersonData, targetPersonData);
-    const style = getEdgeStyleForRelationship(relationshipType);
-    const handles = this.determineHandles(relationshipType, options);
+    
+    // Map legacy relationship types to new combined types
+    const mappedRelationshipType = mapLegacyRelationshipType(relationshipType);
+    
+    const style = getEdgeStyleForRelationship(mappedRelationshipType);
+    const handles = this.determineHandles(mappedRelationshipType, options);
+
+    // Get dual labels based on the relationship type and person genders
+    const { sourceLabel, targetLabel } = getDualLabels(
+      mappedRelationshipType, 
+      sourcePersonData, 
+      targetPersonData, 
+      options.direction || 'bidirectional'
+    );
 
     return {
       id: edgeId,
@@ -20,28 +31,35 @@ export class RelationshipEdgeService {
       target: targetId,
       type: 'relationship',
       data: { 
-        label, 
-        relationshipType 
+        sourceLabel,
+        targetLabel,
+        relationshipType: mappedRelationshipType,
+        // Keep legacy label for backwards compatibility
+        label: sourceLabel || this.getRelationshipLabel(mappedRelationshipType, sourcePersonData, targetPersonData)
       },
       sourceHandle: handles.sourceHandle,
       targetHandle: handles.targetHandle,
-      ...style
+      style: style
     };
   }
 
   /**
    * Create edge for parent-child relationship
    */
-  static createParentChildEdge(parentId, childId, parentData, childData, relationshipType = RELATIONSHIP_TYPES.BIOLOGICAL_PARENT) {
+  static createParentChildEdge(parentId, childId, parentData, childData, relationshipType = RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD) {
+    // Map legacy relationship types
+    const mappedType = mapLegacyRelationshipType(relationshipType);
+    
     return this.createEdge(
       parentId, 
       childId, 
-      relationshipType, 
+      mappedType, 
       parentData, 
       childData,
       {
         sourceHandle: 'bottom',
-        targetHandle: 'top'
+        targetHandle: 'top',
+        direction: 'parent-to-child'
       }
     );
   }
@@ -93,10 +111,12 @@ export class RelationshipEdgeService {
       };
     }
 
-    switch (relationshipType) {
-      case RELATIONSHIP_TYPES.BIOLOGICAL_PARENT:
-      case RELATIONSHIP_TYPES.ADOPTIVE_PARENT:
-      case RELATIONSHIP_TYPES.STEPPARENT:
+    // Map legacy types first
+    const mappedType = mapLegacyRelationshipType(relationshipType);
+
+    switch (mappedType) {
+      case RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD:
+      case RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD:
         return {
           sourceHandle: 'bottom',
           targetHandle: 'top'
@@ -109,8 +129,6 @@ export class RelationshipEdgeService {
         };
       
       case RELATIONSHIP_TYPES.SIBLING:
-      case RELATIONSHIP_TYPES.HALF_SIBLING:
-      case RELATIONSHIP_TYPES.STEP_SIBLING:
         return {
           sourceHandle: 'right',
           targetHandle: 'left'
@@ -168,19 +186,22 @@ export class RelationshipEdgeService {
    * Create edge configuration for adding a new relative
    */
   static createNewRelativeEdge(sourceNodeId, newNodeId, relationshipType, sourceData, newPersonData, direction) {
+    // Map legacy relationship types
+    const mappedType = mapLegacyRelationshipType(relationshipType);
+    
     switch (direction) {
       case 'parent':
-        return this.createParentChildEdge(newNodeId, sourceNodeId, newPersonData, sourceData, relationshipType);
+        return this.createParentChildEdge(newNodeId, sourceNodeId, newPersonData, sourceData, mappedType);
       
       case 'child':
-        return this.createParentChildEdge(sourceNodeId, newNodeId, sourceData, newPersonData, relationshipType);
+        return this.createParentChildEdge(sourceNodeId, newNodeId, sourceData, newPersonData, mappedType);
       
       case 'spouse':
         // For spouse, we need position data - this will be set later
         return this.createEdge(newNodeId, sourceNodeId, RELATIONSHIP_TYPES.SPOUSE, newPersonData, sourceData);
       
       default:
-        return this.createEdge(newNodeId, sourceNodeId, relationshipType, newPersonData, sourceData);
+        return this.createEdge(newNodeId, sourceNodeId, mappedType, newPersonData, sourceData);
     }
   }
 
@@ -189,6 +210,9 @@ export class RelationshipEdgeService {
    */
   static validateRelationship(person1, person2, relationshipType, existingEdges) {
     const errors = [];
+    
+    // Map legacy relationship types
+    const mappedType = mapLegacyRelationshipType(relationshipType);
 
     // Check if relationship already exists
     const existingRelationship = existingEdges.find(edge => 
@@ -206,7 +230,8 @@ export class RelationshipEdgeService {
     }
 
     // Age validation for parent-child relationships
-    if (relationshipType === RELATIONSHIP_TYPES.BIOLOGICAL_PARENT) {
+    if (mappedType === RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD || 
+        mappedType === RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD) {
       const age1 = this.calculateAge(person1.data.birthDate);
       const age2 = this.calculateAge(person2.data.birthDate);
       

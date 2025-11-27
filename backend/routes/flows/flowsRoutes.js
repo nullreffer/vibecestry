@@ -1,11 +1,20 @@
 const express = require('express');
 const Chart = require('../../models/Chart');
-const { requireAuth } = require('../auth');
 const router = express.Router();
 
 // GET /api/flows - Get all flows list for authenticated user
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
+    // Debug logging
+    console.log('GET /api/flows - User:', req.user ? req.user.id : 'No user');
+    
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
     const charts = await Chart.find({ userId: req.user.id })
       .select('title description createdAt updatedAt nodes edges')
       .sort({ updatedAt: -1 });
@@ -35,7 +44,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // GET /api/flows/:id - Get specific flow data
-router.get('/:id', requireAuth, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const chart = await Chart.findOne({ 
       _id: req.params.id, 
@@ -68,8 +77,62 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/flows - Create a new chart
+router.post('/', async (req, res) => {
+  try {
+    // Debug logging
+    console.log('POST /api/flows - User:', req.user ? req.user.id : 'No user');
+    console.log('POST /api/flows - Body:', req.body);
+    
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+    
+    const { nodes, edges, name, description } = req.body;
+    
+    if (!nodes || !edges) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nodes and edges are required'
+      });
+    }
+
+    // Create new chart
+    const chart = new Chart({
+      userId: req.user.id,
+      title: name || 'New Family Tree',
+      description: description || '',
+      nodes,
+      edges
+    });
+    
+    await chart.save();
+    
+    res.json({
+      success: true,
+      message: 'Chart created successfully',
+      data: {
+        id: chart._id.toString(),
+        name: chart.title,
+        description: chart.description,
+        nodes: chart.nodes,
+        edges: chart.edges
+      }
+    });
+  } catch (error) {
+    console.error('Error creating chart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create chart'
+    });
+  }
+});
+
 // POST /api/flows/:id - Save specific flow data
-router.post('/:id', requireAuth, async (req, res) => {
+router.post('/:id', async (req, res) => {
   try {
     const { nodes, edges, name, description } = req.body;
     
@@ -133,7 +196,7 @@ router.post('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/flows/:id - Delete a flow
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const chart = await Chart.findOneAndDelete({ 
       _id: req.params.id, 

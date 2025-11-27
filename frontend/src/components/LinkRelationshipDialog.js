@@ -1,18 +1,34 @@
 import React, { useState } from 'react';
-import { getRelationshipOptions, RELATIONSHIP_TYPES } from '../constants/relationships';
+import { getSimplifiedRelationshipOptions, RELATIONSHIP_TYPES } from '../constants/relationships';
 import './PersonEditDialog.css';
 
 const LinkRelationshipDialog = ({ isOpen, onSave, onCancel, sourcePerson, targetPerson }) => {
-  const [relationshipType, setRelationshipType] = useState(RELATIONSHIP_TYPES.BIOLOGICAL_PARENT);
+  const [relationshipType, setRelationshipType] = useState('biological-parent');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(relationshipType);
-    setRelationshipType(RELATIONSHIP_TYPES.BIOLOGICAL_PARENT);
+    
+    // Find the selected relationship option to get the actual relationship type
+    const selectedOption = getSimplifiedRelationshipOptions().find(option => option.value === relationshipType);
+    const actualRelationshipType = selectedOption ? selectedOption.relationshipType : RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD;
+    
+    // Determine the direction for parent-child relationships
+    let relationshipDirection = 'bidirectional';
+    if (relationshipType.includes('parent')) {
+      relationshipDirection = 'parent-to-child';
+    } else if (relationshipType.includes('child')) {
+      relationshipDirection = 'child-to-parent';
+    }
+    
+    onSave({
+      relationshipType: actualRelationshipType,
+      relationshipDirection
+    });
+    setRelationshipType('biological-parent');
   };
 
   const handleCancel = () => {
-    setRelationshipType(RELATIONSHIP_TYPES.BIOLOGICAL_PARENT);
+    setRelationshipType('biological-parent');
     onCancel();
   };
 
@@ -50,11 +66,23 @@ const LinkRelationshipDialog = ({ isOpen, onSave, onCancel, sourcePerson, target
                 onChange={(e) => setRelationshipType(e.target.value)}
                 required
               >
-                {getRelationshipOptions().map(option => (
-                  <option key={option.value} value={option.value}>
-                    {sourcePerson?.name} is {targetPerson?.name}'s {option.label}
-                  </option>
-                ))}
+                {getSimplifiedRelationshipOptions().map(option => {
+                  // Create clearer labels for the relationship direction
+                  let displayLabel = '';
+                  if (option.value.includes('parent')) {
+                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label.replace(' (', ' ').replace(')', '')}`;
+                  } else if (option.value.includes('child')) {
+                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label.replace(' (', ' ').replace(')', '')}`;
+                  } else {
+                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label}`;
+                  }
+                  
+                  return (
+                    <option key={option.value} value={option.value}>
+                      {displayLabel}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 

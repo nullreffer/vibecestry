@@ -11,6 +11,27 @@
   user-select: none;
 }
 
+/* Dual label specific styles */
+.relationship-label-bg.source-label {
+  fill: #2d2d2d;
+  stroke: #6ede87;
+  opacity: 0.9;
+}
+
+.relationship-label-bg.target-label {
+  fill: #2d2d2d;
+  stroke: #87ceeb;
+  opacity: 0.9;
+}
+
+.source-label-text {
+  fill: #6ede87;
+}
+
+.target-label-text {
+  fill: #87ceeb;
+}
+
 .react-flow__edge:hover .relationship-label-bg {
   fill: #404040;
   stroke: #6ede87;
@@ -18,6 +39,14 @@
 
 .react-flow__edge:hover .relationship-label-text {
   fill: #6ede87;
+}
+
+.react-flow__edge:hover .source-label-text {
+  fill: #ffffff;
+}
+
+.react-flow__edge:hover .target-label-text {
+  fill: #ffffff;
 }
 
 /* Different styles for different relationship types */

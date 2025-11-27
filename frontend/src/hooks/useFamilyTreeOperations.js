@@ -26,8 +26,8 @@ export const useFamilyTreeOperations = (nodes, edges, setNodes, setEdges) => {
   }, [nodes, edges, setNodes, setEdges]);
 
   // Create a link between existing nodes
-  const handleCreateLink = useCallback((sourceId, targetId, relationshipType) => {
-    const newEdge = FamilyTreeNodeService.createLink(sourceId, targetId, relationshipType, nodes);
+  const handleCreateLink = useCallback((sourceId, targetId, relationshipType, relationshipData = null) => {
+    const newEdge = FamilyTreeNodeService.createLink(sourceId, targetId, relationshipType, nodes, relationshipData);
     if (newEdge) {
       setEdges(eds => [...eds, newEdge]);
     }

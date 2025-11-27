@@ -123,10 +123,10 @@ const AddFlow = () => {
   const HORIZONTAL_SPACING = 300;
   const CENTER_X = 400;
 
-  const onConnect = useCallback((params) => {
-    console.log('Connection params:', params);
-    setEdges((eds) => addEdge(params, eds));
-  }, [setEdges]);
+  const onConnect = useCallback(() => {
+    // Disable manual edge creation - edges should only be created through Add Relative or Link Relative
+    console.log('Manual edge creation disabled. Use Add Relative or Link Relative buttons.');
+  }, []);
 
   // Simplified handlers using services
   const handleAddPerson = familyTreeOps.handleAddPerson;
@@ -205,7 +205,8 @@ const AddFlow = () => {
   // Handle linking persons (for future implementation)
   const handleLinkPerson = useCallback((personId, relationship) => {
     // TODO: Implement linking functionality
-    alert(`Link ${relationship} functionality coming soon!`);
+    const relationshipLabel = relationship.label || relationship.value || String(relationship);
+    alert(`Link ${relationshipLabel} functionality coming soon!`);
   }, []);
 
   const handleSave = async () => {
@@ -333,6 +334,8 @@ const AddFlow = () => {
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            connectOnClick={false}
+            connectionMode="strict"
             fitView
             style={{ background: '#1a1a1a' }}
             defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
