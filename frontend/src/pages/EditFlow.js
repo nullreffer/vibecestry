@@ -73,6 +73,163 @@ const EditFlow = () => {
     setLinkingSourceData(sourceData);
   }, []);
 
+  // Smart positioning utility functions
+  const getNodeBounds = useCallback(() => {
+    if (nodes.length === 0) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    
+    const positions = nodes.map(node => ({
+      x: node.position.x,
+      y: node.position.y,
+      width: 202, // Standard node width
+      height: 122 // Standard node height
+    }));
+
+    return {
+      minX: Math.min(...positions.map(p => p.x)),
+      maxX: Math.max(...positions.map(p => p.x + p.width)),
+      minY: Math.min(...positions.map(p => p.y)),
+      maxY: Math.max(...positions.map(p => p.y + p.height))
+    };
+  }, [nodes]);
+
+  const findOptimalSpousePosition = useCallback((sourceNode, nodes) => {
+    const sourcePos = sourceNode.position;
+    const nodeWidth = 202;
+    const nodeHeight = 122;
+    const horizontalGap = 50;
+    
+    // Try to position to the right first
+    const rightPosition = { x: sourcePos.x + nodeWidth + horizontalGap, y: sourcePos.y };
+    
+    // Check if there's a collision to the right
+    const hasCollisionRight = nodes.some(node => {
+      const nodeRight = node.position.x + nodeWidth;
+      const nodeBottom = node.position.y + nodeHeight;
+      return (
+        rightPosition.x < nodeRight &&
+        rightPosition.x + nodeWidth > node.position.x &&
+        rightPosition.y < nodeBottom &&
+        rightPosition.y + nodeHeight > node.position.y
+      );
+    });
+    
+    if (!hasCollisionRight) {
+      return { 
+        spousePosition: rightPosition,
+        marriagePosition: { x: sourcePos.x + (nodeWidth + horizontalGap) / 2, y: sourcePos.y + nodeHeight + 20 },
+        direction: 'right'
+      };
+    }
+    
+    // Try to position to the left
+    const leftPosition = { x: sourcePos.x - nodeWidth - horizontalGap, y: sourcePos.y };
+    
+    const hasCollisionLeft = nodes.some(node => {
+      const nodeRight = node.position.x + nodeWidth;
+      const nodeBottom = node.position.y + nodeHeight;
+      return (
+        leftPosition.x < nodeRight &&
+        leftPosition.x + nodeWidth > node.position.x &&
+        leftPosition.y < nodeBottom &&
+        leftPosition.y + nodeHeight > node.position.y
+      );
+    });
+    
+    if (!hasCollisionLeft) {
+      return {
+        spousePosition: leftPosition,
+        marriagePosition: { x: leftPosition.x + (nodeWidth + horizontalGap) / 2, y: sourcePos.y + nodeHeight + 20 },
+        direction: 'left'
+      };
+    }
+    
+    // If both sides are blocked, push nodes to make space on the right
+    return {
+      spousePosition: rightPosition,
+      marriagePosition: { x: sourcePos.x + (nodeWidth + horizontalGap) / 2, y: sourcePos.y + nodeHeight + 20 },
+      direction: 'right',
+      needsSpaceClearing: true
+    };
+  }, []);
+
+  const pushNodesForSpace = useCallback((affectedArea, direction, pushDistance) => {
+    setNodes(currentNodes => 
+      currentNodes.map(node => {
+        const nodeRight = node.position.x + 202;
+        const nodeBottom = node.position.y + 122;
+        
+        // Check if node is in the affected area
+        const isInArea = (
+          affectedArea.x < nodeRight &&
+          affectedArea.x + 202 > node.position.x &&
+          affectedArea.y < nodeBottom &&
+          affectedArea.y + 122 > node.position.y
+        );
+        
+        if (isInArea) {
+          return {
+            ...node,
+            position: {
+              x: direction === 'right' ? node.position.x + pushDistance : node.position.x - pushDistance,
+              y: node.position.y
+            }
+          };
+        }
+        return node;
+      })
+    );
+  }, []);
+
+  const findOptimalChildPosition = useCallback((marriageNode, nodes) => {
+    const marriagePos = marriageNode.position;
+    const nodeWidth = 202;
+    const nodeHeight = 122;
+    const verticalGap = 60;
+    
+    // Find all children of this marriage
+    const marriageChildren = edges
+      .filter(edge => edge.source === marriageNode.id && edge.data?.relationshipType === 'PARENT_CHILD')
+      .map(edge => nodes.find(node => node.id === edge.target))
+      .filter(Boolean);
+    
+    // Position new child in a row below marriage, aligned horizontally with existing children
+    const baseY = marriagePos.y + nodeHeight + verticalGap;
+    
+    if (marriageChildren.length === 0) {
+      // First child - center under marriage
+      return { x: marriagePos.x, y: baseY };
+    }
+    
+    // Position next to existing children
+    const childrenXPositions = marriageChildren.map(child => child.position.x);
+    const minChildX = Math.min(...childrenXPositions);
+    const maxChildX = Math.max(...childrenXPositions);
+    
+    // Try to add to the right of existing children
+    const rightPosition = { x: maxChildX + nodeWidth + 30, y: baseY };
+    
+    // Check for collisions
+    const hasCollision = nodes.some(node => {
+      if (marriageChildren.includes(node)) return false; // Don't check against siblings
+      const nodeRight = node.position.x + nodeWidth;
+      const nodeBottom = node.position.y + nodeHeight;
+      return (
+        rightPosition.x < nodeRight &&
+        rightPosition.x + nodeWidth > node.position.x &&
+        rightPosition.y < nodeBottom &&
+        rightPosition.y + nodeHeight > node.position.y
+      );
+    });
+    
+    if (!hasCollision) {
+      return rightPosition;
+    }
+    
+    // If right is blocked, try left
+    const leftPosition = { x: minChildX - nodeWidth - 30, y: baseY };
+    return leftPosition;
+  }, [edges]);
+
   // Simplified handlers using services
   const handleAddPerson = familyTreeOps.handleAddPerson;
   const handleDeletePerson = familyTreeOps.handleDeletePerson;
@@ -104,7 +261,44 @@ const EditFlow = () => {
         setFlowName(flowData.name);
         setFlowDescription(flowData.description);
         setNodes(flowData.nodes);
-        setEdges(flowData.edges);
+        
+        // Enhance edges with labels if missing
+        const enhancedEdges = flowData.edges.map(edge => {
+          const edgeData = edge.data || {};
+          
+          // If edge already has dual labels, use them
+          if (edgeData.sourceLabel && edgeData.targetLabel) {
+            return edge;
+          }
+          
+          // If edge has legacy label, keep it
+          if (edgeData.label) {
+            return edge;
+          }
+          
+          // Generate labels based on relationship type
+          let sourceLabel = 'related to';
+          let targetLabel = 'related to';
+          
+          if (edgeData.relationshipType === 'PARENT_CHILD') {
+            sourceLabel = 'parent of';
+            targetLabel = 'child of';
+          } else if (edgeData.relationshipType === 'MARRIAGE') {
+            sourceLabel = 'spouse of';
+            targetLabel = 'spouse of';
+          }
+          
+          return {
+            ...edge,
+            data: {
+              ...edgeData,
+              sourceLabel,
+              targetLabel
+            }
+          };
+        });
+        
+        setEdges(enhancedEdges);
         setError(null);
       } else {
         setError('Flow not found');
@@ -210,6 +404,14 @@ const EditFlow = () => {
   }, []);
 
   const handleAddChildToMarriage = useCallback((marriageId, marriageData) => {
+    // Find the marriage node
+    const marriageNode = nodes.find(n => n.id === marriageId);
+    
+    // Calculate optimal child position
+    const childPosition = marriageNode 
+      ? findOptimalChildPosition(marriageNode, nodes)
+      : { x: 300, y: 400 };
+    
     // Create a new child person and show edit dialog
     const childId = `person-${Date.now()}-child`;
     const newChild = {
@@ -224,7 +426,7 @@ const EditFlow = () => {
         occupation: '',
         notes: ''
       },
-      position: { x: 300, y: 400 }
+      position: childPosition
     };
     
     // Add the child node
@@ -252,7 +454,7 @@ const EditFlow = () => {
     
     // Update node counter
     setNodeIdCounter(prev => prev + 1);
-  }, []);
+  }, [nodes, findOptimalChildPosition]);
 
   const handleAddRelative = useCallback((sourceId, sourceData) => {
     setAddRelativeSource({ id: sourceId, ...sourceData });
@@ -533,11 +735,23 @@ const EditFlow = () => {
           : node
       ));
     } else {
+      // Get the source person (who triggered adding spouse)
+      const sourcePerson = addRelativeSource ? nodes.find(n => n.id === addRelativeSource.id) : null;
+      
+      // Calculate smart positioning
+      const positioning = sourcePerson 
+        ? findOptimalSpousePosition(sourcePerson, nodes)
+        : { 
+            spousePosition: { x: 300, y: 300 }, 
+            marriagePosition: { x: 300, y: 400 },
+            direction: 'right'
+          };
+
       // Create new marriage node
       const newMarriage = {
         id: marriageId,
         type: 'marriage',
-        position: { x: 300, y: 300 },
+        position: positioning.marriagePosition,
         data: {
           ...marriageData,
           onEdit: handleEditMarriage,
@@ -553,13 +767,18 @@ const EditFlow = () => {
       const newNodes = [newMarriage];
       const newEdges = [];
       
+      // Determine which person is the source (existing) and which is the new spouse
+      const isSourceHusband = sourcePerson && sourcePerson.data.biologicalSex === 'male';
+      
       // Create husband if doesn't exist
       if (!husbandExists && marriageData.husbandName) {
         const husbandId = marriageData.husbandId || `person-${Date.now()}-husband`;
+        const husbandPosition = isSourceHusband ? sourcePerson.position : positioning.spousePosition;
+        
         const newHusband = {
           id: husbandId,
           type: 'person',
-          position: { x: 150, y: 250 },
+          position: husbandPosition,
           data: {
             name: marriageData.husbandName,
             biologicalSex: 'male',
@@ -588,10 +807,13 @@ const EditFlow = () => {
       // Create wife if doesn't exist  
       if (!wifeExists && marriageData.wifeName) {
         const wifeId = marriageData.wifeId || `person-${Date.now()}-wife`;
+        const isSourceWife = sourcePerson && sourcePerson.data.biologicalSex === 'female';
+        const wifePosition = isSourceWife ? sourcePerson.position : positioning.spousePosition;
+        
         const newWife = {
           id: wifeId,
           type: 'person',
-          position: { x: 450, y: 250 },
+          position: wifePosition,
           data: {
             name: marriageData.wifeName,
             biologicalSex: 'female',
@@ -650,6 +872,12 @@ const EditFlow = () => {
         newEdges.push(wifeEdge);
       }
       
+      // Clear space if needed
+      if (positioning.needsSpaceClearing) {
+        const pushDistance = 252; // Node width + gap
+        pushNodesForSpace(positioning.spousePosition, positioning.direction, pushDistance);
+      }
+      
       // Add all new nodes and edges
       setNodes(nodes => [...nodes, ...newNodes]);
       setEdges(edges => [...edges, ...newEdges]);
@@ -658,7 +886,7 @@ const EditFlow = () => {
     setIsMarriageEditDialogOpen(false);
     setEditingMarriage(null);
     setAddRelativeSource(null); // Clear the source person
-  }, [editingMarriage, nodes, isLinkingMode, linkingSourceId, handleEditMarriage, handleAddChildToMarriage, handleDeleteMarriage, handleEditPerson, handleDeletePerson, handleAddRelative, handleAddSpouse, handleAddParents, handleLinkRelative]);
+  }, [editingMarriage, nodes, isLinkingMode, linkingSourceId, handleEditMarriage, handleAddChildToMarriage, handleDeleteMarriage, handleEditPerson, handleDeletePerson, handleAddRelative, handleAddSpouse, handleAddParents, handleLinkRelative, addRelativeSource, findOptimalSpousePosition, pushNodesForSpace]);
 
   const handleCancelMarriage = useCallback(() => {
     setIsMarriageEditDialogOpen(false);
@@ -824,8 +1052,10 @@ const EditFlow = () => {
                 onAddRelative: handleAddRelative,
                 onAddSpouse: handleAddSpouse,
                 onAddParents: handleAddParents,
-                onEdit: handleEditPerson,
-                onDelete: handleDeletePerson,
+                // Conditionally assign handlers based on node type
+                onEdit: node.type === 'marriage' ? handleEditMarriage : handleEditPerson,
+                onDelete: node.type === 'marriage' ? handleDeleteMarriage : handleDeletePerson,
+                onAddChild: node.type === 'marriage' ? handleAddChildToMarriage : undefined,
                 onLink: handleLinkRelative,
                 onNodeClickForLinking: handleNodeClickForLinking,
                 isLinkingMode,
