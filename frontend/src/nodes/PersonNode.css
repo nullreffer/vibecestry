@@ -201,6 +201,26 @@
   flex-shrink: 0;
 }
 
+.person-node .spouse-btn {
+  background: #ff69b4;
+  color: #ffffff;
+}
+
+.person-node .spouse-btn:hover {
+  background: #ff1493;
+  transform: translateY(-1px);
+}
+
+.person-node .parents-btn {
+  background: #ff7f50;
+  color: #ffffff;
+}
+
+.person-node .parents-btn:hover {
+  background: #ff6347;
+  transform: translateY(-1px);
+}
+
 .person-node .add-btn {
   background: #4a90e2;
   color: #ffffff;

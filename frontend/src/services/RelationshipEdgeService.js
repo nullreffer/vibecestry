@@ -101,17 +101,51 @@ export class RelationshipEdgeService {
   }
 
   /**
-   * Determine appropriate handles based on relationship type
+   * Calculate optimal handles based on node positions
    */
-  static determineHandles(relationshipType, options = {}) {
-    if (options.sourceHandle && options.targetHandle) {
-      return {
-        sourceHandle: options.sourceHandle,
-        targetHandle: options.targetHandle
-      };
+  static calculateOptimalHandles(sourcePosition, targetPosition, relationshipType) {
+    if (!sourcePosition || !targetPosition) {
+      // Fallback to static handles
+      return this.getStaticHandles(relationshipType);
     }
 
-    // Map legacy types first
+    const deltaX = targetPosition.x - sourcePosition.x;
+    const deltaY = targetPosition.y - sourcePosition.y;
+    
+    // Calculate angle between nodes
+    const angle = Math.atan2(deltaY, deltaX);
+    const degrees = (angle * 180) / Math.PI;
+    
+    let sourceHandle, targetHandle;
+    
+    // Determine handles based on relative position
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // More horizontal than vertical
+      if (deltaX > 0) {
+        sourceHandle = 'right';
+        targetHandle = 'left';
+      } else {
+        sourceHandle = 'left';
+        targetHandle = 'right';
+      }
+    } else {
+      // More vertical than horizontal
+      if (deltaY > 0) {
+        sourceHandle = 'bottom';
+        targetHandle = 'top';
+      } else {
+        sourceHandle = 'top';
+        targetHandle = 'bottom';
+      }
+    }
+    
+    return { sourceHandle, targetHandle };
+  }
+
+  /**
+   * Get static handles for relationship types (fallback)
+   */
+  static getStaticHandles(relationshipType) {
     const mappedType = mapLegacyRelationshipType(relationshipType);
 
     switch (mappedType) {
@@ -133,13 +167,37 @@ export class RelationshipEdgeService {
           sourceHandle: 'right',
           targetHandle: 'left'
         };
-      
+
       default:
         return {
-          sourceHandle: 'bottom',
-          targetHandle: 'top'
+          sourceHandle: 'right',
+          targetHandle: 'left'
         };
     }
+  }
+
+  /**
+   * Determine appropriate handles based on relationship type and positions
+   */
+  static determineHandles(relationshipType, options = {}) {
+    if (options.sourceHandle && options.targetHandle) {
+      return {
+        sourceHandle: options.sourceHandle,
+        targetHandle: options.targetHandle
+      };
+    }
+
+    // Use position-based calculation if positions are available
+    if (options.sourcePosition && options.targetPosition) {
+      return this.calculateOptimalHandles(
+        options.sourcePosition, 
+        options.targetPosition, 
+        relationshipType
+      );
+    }
+
+    // Fallback to static handles based on relationship type
+    return this.getStaticHandles(relationshipType);
   }
 
   /**
@@ -261,5 +319,12 @@ export class RelationshipEdgeService {
     }
     
     return age;
+  }
+
+  /**
+   * Get dual labels for a relationship (static wrapper for external use)
+   */
+  static getDualLabels(relationshipType, sourcePerson, targetPerson, direction = 'bidirectional') {
+    return getDualLabels(relationshipType, sourcePerson, targetPerson, direction);
   }
 }

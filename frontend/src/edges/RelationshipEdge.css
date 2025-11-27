@@ -76,3 +76,41 @@
 .react-flow__edge[data-relationship="child"] .relationship-label-text {
   fill: #6ede87;
 }
+
+/* Edge Context Menu */
+.edge-context-menu-content {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  z-index: 1000;
+}
+
+.delete-edge-btn, .cancel-edge-btn {
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.delete-edge-btn:hover {
+  background: #fee;
+  border-color: #f87171;
+  color: #dc2626;
+}
+
+.cancel-edge-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}

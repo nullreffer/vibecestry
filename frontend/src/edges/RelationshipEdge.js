@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getSmoothStepPath, getEdgeCenter } from 'react-flow-renderer';
 import './RelationshipEdge.css';
 
@@ -14,6 +14,40 @@ const RelationshipEdge = ({
   data,
   markerEnd,
 }) => {
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowContextMenu(false);
+    };
+
+    if (showContextMenu) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showContextMenu]);
+
+  const handleEdgeClick = (event) => {
+    event.stopPropagation();
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+    setShowContextMenu(true);
+  };
+
+  const handleDeleteEdge = () => {
+    if (data?.onDelete) {
+      data.onDelete(id);
+    }
+    setShowContextMenu(false);
+  };
+
+  const handleCloseMenu = () => {
+    setShowContextMenu(false);
+  };
   const edgePath = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -42,12 +76,24 @@ const RelationshipEdge = ({
 
   return (
     <>
+      {/* Clickable path */}
       <path
         id={id}
-        style={style}
+        style={{ ...style, cursor: 'pointer' }}
         className="react-flow__edge-path"
         d={edgePath}
         markerEnd={markerEnd}
+        onClick={handleEdgeClick}
+      />
+      
+      {/* Invisible wider path for easier clicking */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth="10"
+        onClick={handleEdgeClick}
+        style={{ cursor: 'pointer' }}
       />
       
       {/* Legacy single label support */}
@@ -129,6 +175,34 @@ const RelationshipEdge = ({
             {data.targetLabel}
           </text>
         </g>
+      )}
+
+      {/* Context Menu */}
+      {showContextMenu && (
+        <foreignObject
+          x={contextMenuPosition.x - sourceX}
+          y={contextMenuPosition.y - sourceY}
+          width="150"
+          height="80"
+          className="edge-context-menu"
+        >
+          <div className="edge-context-menu-content">
+            <button 
+              className="delete-edge-btn"
+              onClick={handleDeleteEdge}
+              title="Delete relationship"
+            >
+              🗑️ Delete Relationship
+            </button>
+            <button 
+              className="cancel-edge-btn"
+              onClick={handleCloseMenu}
+              title="Cancel"
+            >
+              ❌ Cancel
+            </button>
+          </div>
+        </foreignObject>
       )}
     </>
   );

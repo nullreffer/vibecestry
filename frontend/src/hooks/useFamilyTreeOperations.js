@@ -35,9 +35,17 @@ export const useFamilyTreeOperations = (nodes, edges, setNodes, setEdges) => {
 
   // Edit person data
   const handleEditPerson = useCallback((personId, newData) => {
-    const updatedNodes = FamilyTreeNodeService.updatePersonData(personId, newData, nodes);
-    setNodes(updatedNodes);
-  }, [nodes, setNodes]);
+    const result = FamilyTreeNodeService.updatePersonData(personId, newData, nodes, edges);
+    setNodes(result.nodes);
+    setEdges(result.edges);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  // Delete an edge/relationship
+  const handleDeleteEdge = useCallback((edgeId) => {
+    if (window.confirm('Are you sure you want to delete this relationship?')) {
+      setEdges(edges => edges.filter(edge => edge.id !== edgeId));
+    }
+  }, [setEdges]);
 
   // Delete a person
   const handleDeletePerson = useCallback((personId) => {
@@ -70,6 +78,7 @@ export const useFamilyTreeOperations = (nodes, edges, setNodes, setEdges) => {
     handleCreateLink,
     handleEditPerson,
     handleDeletePerson,
+    handleDeleteEdge,
     handleAutoArrange,
     getFamilyStats,
     validateTree

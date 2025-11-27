@@ -3,14 +3,16 @@ export const RELATIONSHIP_TYPES = {
   BIOLOGICAL_PARENT_CHILD: 'biological-parent-child',
   ADOPTED_PARENT_CHILD: 'adopted-parent-child',
   SPOUSE: 'spouse',
-  SIBLING: 'sibling'
+  SIBLING: 'sibling',
+  MARRIAGE: 'marriage'
 };
 
 export const RELATIONSHIP_LABELS = {
   [RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD]: 'Biological Parent-Child',
   [RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD]: 'Adopted Parent-Child',
   [RELATIONSHIP_TYPES.SPOUSE]: 'Spouse',
-  [RELATIONSHIP_TYPES.SIBLING]: 'Sibling'
+  [RELATIONSHIP_TYPES.SIBLING]: 'Sibling',
+  [RELATIONSHIP_TYPES.MARRIAGE]: 'Marriage'
 };
 
 export const EDGE_STYLES = {
@@ -33,6 +35,11 @@ export const EDGE_STYLES = {
     stroke: '#87ceeb', 
     strokeWidth: 2, 
     strokeDasharray: '2,2' 
+  },
+  [RELATIONSHIP_TYPES.MARRIAGE]: { 
+    stroke: '#e53e3e', 
+    strokeWidth: 3, 
+    strokeDasharray: 'none' 
   }
 };
 
@@ -76,25 +83,23 @@ export const DUAL_LABELS = {
   }
 };
 
-// Get relationship options for dropdowns
+// Get relationship options for dropdowns (removed sibling - use marriage nodes instead)
 export const getRelationshipOptions = () => {
   return [
     { value: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD] },
     { value: RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD] },
-    { value: RELATIONSHIP_TYPES.SPOUSE, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.SPOUSE] },
-    { value: RELATIONSHIP_TYPES.SIBLING, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.SIBLING] }
+    { value: RELATIONSHIP_TYPES.SPOUSE, label: RELATIONSHIP_LABELS[RELATIONSHIP_TYPES.SPOUSE] }
   ];
 };
 
-// Get simplified relationship options for Add Relative dialog
+// Get simplified relationship options for Add Relative dialog (no siblings - use marriage nodes)
 export const getSimplifiedRelationshipOptions = () => {
   return [
     { value: 'biological-parent', label: 'Parent (Biological)', relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD },
     { value: 'biological-child', label: 'Child (Biological)', relationshipType: RELATIONSHIP_TYPES.BIOLOGICAL_PARENT_CHILD },
     { value: 'adopted-parent', label: 'Parent (Adopted)', relationshipType: RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD },
     { value: 'adopted-child', label: 'Child (Adopted)', relationshipType: RELATIONSHIP_TYPES.ADOPTED_PARENT_CHILD },
-    { value: 'spouse', label: 'Spouse', relationshipType: RELATIONSHIP_TYPES.SPOUSE },
-    { value: 'sibling', label: 'Sibling', relationshipType: RELATIONSHIP_TYPES.SIBLING }
+    { value: 'spouse', label: 'Spouse', relationshipType: RELATIONSHIP_TYPES.SPOUSE }
   ];
 };
 

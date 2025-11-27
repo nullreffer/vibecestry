@@ -44,6 +44,41 @@ const personSchema = new mongoose.Schema({
   }
 });
 
+const marriageSchema = new mongoose.Schema({
+  husbandId: {
+    type: String,
+    default: ''
+  },
+  husbandName: {
+    type: String,
+    default: ''
+  },
+  wifeId: {
+    type: String,
+    default: ''
+  },
+  wifeName: {
+    type: String,
+    default: ''
+  },
+  marriageDate: {
+    type: String,
+    default: ''
+  },
+  separationDate: {
+    type: String,
+    default: ''
+  },
+  location: {
+    type: String,
+    default: ''
+  },
+  notes: {
+    type: String,
+    default: ''
+  }
+});
+
 const nodeSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -51,13 +86,20 @@ const nodeSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    default: 'person'
+    default: 'person',
+    enum: ['person', 'marriage']
   },
   position: {
     x: { type: Number, required: true },
     y: { type: Number, required: true }
   },
-  data: personSchema
+  data: {
+    type: mongoose.Schema.Types.Mixed,
+    required: true
+  }
+}, {
+  // Disable strict mode to allow flexible data structure
+  strict: false
 });
 
 const edgeSchema = new mongoose.Schema({

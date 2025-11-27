@@ -70,9 +70,9 @@ const LinkRelationshipDialog = ({ isOpen, onSave, onCancel, sourcePerson, target
                   // Create clearer labels for the relationship direction
                   let displayLabel = '';
                   if (option.value.includes('parent')) {
-                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label.replace(' (', ' ').replace(')', '')}`;
+                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label.split(' (')[0]}`;
                   } else if (option.value.includes('child')) {
-                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label.replace(' (', ' ').replace(')', '')}`;
+                    displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label.split(' (')[0]}`;
                   } else {
                     displayLabel = `${sourcePerson?.name} is ${targetPerson?.name}'s ${option.label}`;
                   }

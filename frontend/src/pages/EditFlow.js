@@ -9,9 +9,11 @@ import ReactFlow, {
   MiniMap,
 } from 'react-flow-renderer';
 import PersonNode from '../nodes/PersonNode';
+import MarriageNode from '../nodes/MarriageNode';
 import PersonEditDialog from '../components/PersonEditDialog';
 import AddRelativeDialog from '../components/AddRelativeDialog';
 import LinkRelationshipDialog from '../components/LinkRelationshipDialog';
+import MarriageEditDialog from '../components/MarriageEditDialog';
 import RelationshipEdge from '../edges/RelationshipEdge';
 import { getEdgeStyleForRelationship } from '../constants/relationships';
 import { RelationshipEdgeService } from '../services/RelationshipEdgeService';
@@ -23,6 +25,7 @@ import './EditFlow.css';
 // Custom node types for ancestry
 const nodeTypes = {
   person: PersonNode,
+  marriage: MarriageNode,
 };
 
 const edgeTypes = {
@@ -50,6 +53,8 @@ const EditFlow = () => {
   const [isLinkRelationshipDialogOpen, setIsLinkRelationshipDialogOpen] = useState(false);
   const [isAddRelativeDialogOpen, setIsAddRelativeDialogOpen] = useState(false);
   const [addRelativeSource, setAddRelativeSource] = useState(null);
+  const [isMarriageEditDialogOpen, setIsMarriageEditDialogOpen] = useState(false);
+  const [editingMarriage, setEditingMarriage] = useState(null);
 
   // Initialize hooks for family tree operations
   const familyTreeOps = useFamilyTreeOperations(nodes, edges, setNodes, setEdges);
@@ -58,6 +63,15 @@ const EditFlow = () => {
   // Simplified handlers using services
   const handleAddPerson = familyTreeOps.handleAddPerson;
   const handleDeletePerson = familyTreeOps.handleDeletePerson;
+
+  // Enhance edges with delete functionality
+  const enhancedEdges = edges.map(edge => ({
+    ...edge,
+    data: {
+      ...edge.data,
+      onDelete: familyTreeOps.handleDeleteEdge
+    }
+  }));
 
   useEffect(() => {
     loadFlow();
@@ -169,10 +183,199 @@ const EditFlow = () => {
     }
   }, []);
 
+  // Handle creating/editing marriage
+  const handleEditMarriage = useCallback((marriageId, marriageData) => {
+    setEditingMarriage({ id: marriageId, ...marriageData });
+    setIsMarriageEditDialogOpen(true);
+  }, []);
+
+  const handleDeleteMarriage = useCallback((marriageId) => {
+    if (window.confirm('Are you sure you want to delete this marriage?')) {
+      setNodes(nodes => nodes.filter(node => node.id !== marriageId));
+      // TODO: Also delete related edges
+    }
+  }, []);
+
+  const handleAddChildToMarriage = useCallback((marriageId, marriageData) => {
+    // Create a new child person and show edit dialog
+    const childId = `person-${Date.now()}-child`;
+    const newChild = {
+      id: childId,
+      type: 'person',
+      data: {
+        name: 'New Child',
+        biologicalSex: 'male',
+        birthDate: '',
+        deathDate: '',
+        location: '',
+        occupation: '',
+        notes: ''
+      },
+      position: { x: 300, y: 400 }
+    };
+    
+    // Add the child node
+    setNodes(nodes => [...nodes, newChild]);
+    
+    // Create edge from marriage to child
+    const childEdge = {
+      id: `edge-${marriageId}-${childId}`,
+      source: marriageId,
+      target: childId,
+      type: 'relationship',
+      data: {
+        relationshipType: 'PARENT_CHILD',
+        sourceLabel: 'parents of',
+        targetLabel: 'child of',
+        isDirectional: true
+      }
+    };
+    
+    setEdges(edges => [...edges, childEdge]);
+    
+    // Open edit dialog for the new child
+    setEditingPerson({ id: childId, ...newChild.data });
+    setIsEditDialogOpen(true);
+    
+    // Update node counter
+    setNodeIdCounter(prev => prev + 1);
+  }, []);
+
   const handleAddRelative = useCallback((sourceId, sourceData) => {
     setAddRelativeSource({ id: sourceId, ...sourceData });
     setIsAddRelativeDialogOpen(true);
   }, []);
+
+  const handleAddSpouse = useCallback((sourceId, sourceData) => {
+    // Create a marriage with the person and a new spouse
+    setEditingMarriage(null);
+    setIsMarriageEditDialogOpen(true);
+    // Store the source person to pre-populate the marriage dialog
+    setAddRelativeSource({ id: sourceId, ...sourceData });
+  }, []);
+
+  const handleAddParents = useCallback((sourceId, sourceData) => {
+    // Create both parents and a marriage node automatically
+    const fatherId = `person-${Date.now()}-father`;
+    const motherId = `person-${Date.now()}-mother`;
+    const marriageId = `marriage-${Date.now()}-parents`;
+    
+    // Create father
+    const father = {
+      id: fatherId,
+      type: 'person',
+      data: {
+        name: 'Father',
+        biologicalSex: 'male',
+        birthDate: '',
+        deathDate: '',
+        location: '',
+        occupation: '',
+        notes: '',
+        onEdit: handleEditPerson,
+        onDelete: handleDeletePerson,
+        onAddRelative: handleAddRelative,
+        onAddSpouse: handleAddSpouse,
+        onAddParents: handleAddParents,
+        onLink: handleLinkRelative,
+        isLinkingMode,
+        linkingSourceId
+      },
+      position: { x: 100, y: 50 }
+    };
+    
+    // Create mother
+    const mother = {
+      id: motherId,
+      type: 'person',
+      data: {
+        name: 'Mother',
+        biologicalSex: 'female',
+        birthDate: '',
+        deathDate: '',
+        location: '',
+        occupation: '',
+        notes: '',
+        onEdit: handleEditPerson,
+        onDelete: handleDeletePerson,
+        onAddRelative: handleAddRelative,
+        onAddSpouse: handleAddSpouse,
+        onAddParents: handleAddParents,
+        onLink: handleLinkRelative,
+        isLinkingMode,
+        linkingSourceId
+      },
+      position: { x: 300, y: 50 }
+    };
+    
+    // Create marriage between parents
+    const marriage = {
+      id: marriageId,
+      type: 'marriage',
+      data: {
+        husbandId: fatherId,
+        husbandName: 'Father',
+        wifeId: motherId,
+        wifeName: 'Mother',
+        marriageDate: '',
+        separationDate: '',
+        location: '',
+        notes: '',
+        onEdit: handleEditMarriage,
+        onAddChild: handleAddChildToMarriage,
+        onDelete: handleDeleteMarriage
+      },
+      position: { x: 200, y: 100 }
+    };
+    
+    // Add all three nodes
+    setNodes(nodes => [...nodes, father, mother, marriage]);
+    
+    // Create edges: father-marriage, mother-marriage, marriage-child
+    const fatherToMarriage = {
+      id: `edge-${fatherId}-${marriageId}`,
+      source: fatherId,
+      target: marriageId,
+      type: 'relationship',
+      data: {
+        relationshipType: 'MARRIAGE',
+        sourceLabel: 'husband of',
+        targetLabel: 'spouse of',
+        isDirectional: false
+      }
+    };
+    
+    const motherToMarriage = {
+      id: `edge-${motherId}-${marriageId}`,
+      source: motherId,
+      target: marriageId,
+      type: 'relationship',
+      data: {
+        relationshipType: 'MARRIAGE',
+        sourceLabel: 'wife of',
+        targetLabel: 'spouse of',
+        isDirectional: false
+      }
+    };
+    
+    const marriageToChild = {
+      id: `edge-${marriageId}-${sourceId}`,
+      source: marriageId,
+      target: sourceId,
+      type: 'relationship',
+      data: {
+        relationshipType: 'PARENT_CHILD',
+        sourceLabel: 'parents of',
+        targetLabel: 'child of',
+        isDirectional: true
+      }
+    };
+    
+    setEdges(edges => [...edges, fatherToMarriage, motherToMarriage, marriageToChild]);
+    
+    // Update counter for new nodes
+    setNodeIdCounter(prev => prev + 3);
+  }, [handleEditPerson, handleDeletePerson, handleAddRelative, handleAddSpouse, handleLinkRelative, isLinkingMode, linkingSourceId, handleEditMarriage, handleAddChildToMarriage, handleDeleteMarriage]);
 
   const addNode = () => {
     const newNode = {
@@ -206,11 +409,35 @@ const EditFlow = () => {
   const handleSaveEditedPerson = useCallback((editedData) => {
     if (editingPerson) {
       setNodes((nds) => 
-        nds.map(node => 
-          node.id === editingPerson.id 
-            ? { ...node, data: { ...node.data, ...editedData } }
-            : node
-        )
+        nds.map(node => {
+          // Update the person node
+          if (node.id === editingPerson.id) {
+            return { ...node, data: { ...node.data, ...editedData } };
+          }
+          
+          // Update marriage nodes if this person is husband or wife
+          if (node.type === 'marriage') {
+            const updatedMarriage = { ...node };
+            
+            if (node.data.husbandId === editingPerson.id && editedData.name) {
+              updatedMarriage.data = {
+                ...updatedMarriage.data,
+                husbandName: editedData.name
+              };
+            }
+            
+            if (node.data.wifeId === editingPerson.id && editedData.name) {
+              updatedMarriage.data = {
+                ...updatedMarriage.data,
+                wifeName: editedData.name
+              };
+            }
+            
+            return updatedMarriage;
+          }
+          
+          return node;
+        })
       );
     }
     setIsEditDialogOpen(false);
@@ -286,6 +513,213 @@ const EditFlow = () => {
   const handleCancelAddRelative = useCallback(() => {
     setIsAddRelativeDialogOpen(false);
     setAddRelativeSource(null);
+  }, []);
+
+  // Handle creating/editing marriage
+  const handleCreateMarriage = useCallback(() => {
+    setEditingMarriage(null);
+    setIsMarriageEditDialogOpen(true);
+  }, []);
+
+  const handleEditMarriage = useCallback((marriageId, marriageData) => {
+    setEditingMarriage({ id: marriageId, ...marriageData });
+    setIsMarriageEditDialogOpen(true);
+  }, []);
+
+  const handleSaveMarriage = useCallback((marriageData) => {
+    // Create marriage node
+    const marriageId = editingMarriage?.id || `marriage-${Date.now()}`;
+    
+    if (editingMarriage) {
+      // Update existing marriage
+      setNodes(nodes => nodes.map(node => 
+        node.id === marriageId 
+          ? { ...node, data: { ...node.data, ...marriageData } }
+          : node
+      ));
+    } else {
+      // Create new marriage node
+      const newMarriage = {
+        id: marriageId,
+        type: 'marriage',
+        position: { x: 300, y: 300 },
+        data: {
+          ...marriageData,
+          onEdit: handleEditMarriage,
+          onAddChild: handleAddChildToMarriage,
+          onDelete: handleDeleteMarriage
+        }
+      };
+
+      // Check if we need to create new spouse persons
+      const husbandExists = nodes.find(n => n.id === marriageData.husbandId);
+      const wifeExists = nodes.find(n => n.id === marriageData.wifeId);
+      
+      const newNodes = [newMarriage];
+      const newEdges = [];
+      
+      // Create husband if doesn't exist
+      if (!husbandExists && marriageData.husbandName) {
+        const husbandId = marriageData.husbandId || `person-${Date.now()}-husband`;
+        const newHusband = {
+          id: husbandId,
+          type: 'person',
+          position: { x: 150, y: 250 },
+          data: {
+            name: marriageData.husbandName,
+            biologicalSex: 'male',
+            birthDate: '',
+            deathDate: '',
+            location: '',
+            occupation: '',
+            notes: '',
+            onEdit: handleEditPerson,
+            onDelete: handleDeletePerson,
+            onAddRelative: handleAddRelative,
+            onAddSpouse: handleAddSpouse,
+            onAddParents: handleAddParents,
+            onLink: handleLinkRelative,
+            isLinkingMode,
+            linkingSourceId
+          }
+        };
+        newNodes.push(newHusband);
+        
+        // Update marriageData to include the correct ID
+        marriageData.husbandId = husbandId;
+        newMarriage.data.husbandId = husbandId;
+      }
+      
+      // Create wife if doesn't exist  
+      if (!wifeExists && marriageData.wifeName) {
+        const wifeId = marriageData.wifeId || `person-${Date.now()}-wife`;
+        const newWife = {
+          id: wifeId,
+          type: 'person',
+          position: { x: 450, y: 250 },
+          data: {
+            name: marriageData.wifeName,
+            biologicalSex: 'female',
+            birthDate: '',
+            deathDate: '',
+            location: '',
+            occupation: '',
+            notes: '',
+            onEdit: handleEditPerson,
+            onDelete: handleDeletePerson,
+            onAddRelative: handleAddRelative,
+            onAddSpouse: handleAddSpouse,
+            onAddParents: handleAddParents,
+            onLink: handleLinkRelative,
+            isLinkingMode,
+            linkingSourceId
+          }
+        };
+        newNodes.push(newWife);
+        
+        // Update marriageData to include the correct ID
+        marriageData.wifeId = wifeId;
+        newMarriage.data.wifeId = wifeId;
+      }
+      
+      // Create edges connecting spouses to marriage
+      if (marriageData.husbandId) {
+        const husbandEdge = {
+          id: `edge-${marriageData.husbandId}-${marriageId}`,
+          source: marriageData.husbandId,
+          target: marriageId,
+          type: 'relationship',
+          data: {
+            relationshipType: 'MARRIAGE',
+            sourceLabel: 'husband of',
+            targetLabel: 'spouse of',
+            isDirectional: false
+          }
+        };
+        newEdges.push(husbandEdge);
+      }
+      
+      if (marriageData.wifeId) {
+        const wifeEdge = {
+          id: `edge-${marriageData.wifeId}-${marriageId}`,
+          source: marriageData.wifeId,
+          target: marriageId,
+          type: 'relationship',
+          data: {
+            relationshipType: 'MARRIAGE',
+            sourceLabel: 'wife of',
+            targetLabel: 'spouse of',
+            isDirectional: false
+          }
+        };
+        newEdges.push(wifeEdge);
+      }
+      
+      // Add all new nodes and edges
+      setNodes(nodes => [...nodes, ...newNodes]);
+      setEdges(edges => [...edges, ...newEdges]);
+    }
+
+    setIsMarriageEditDialogOpen(false);
+    setEditingMarriage(null);
+    setAddRelativeSource(null); // Clear the source person
+  }, [editingMarriage, nodes, isLinkingMode, linkingSourceId, handleEditMarriage, handleAddChildToMarriage, handleDeleteMarriage, handleEditPerson, handleDeletePerson, handleAddRelative, handleAddSpouse, handleAddParents, handleLinkRelative]);
+
+  const handleCancelMarriage = useCallback(() => {
+    setIsMarriageEditDialogOpen(false);
+    setEditingMarriage(null);
+  }, []);
+
+  const handleAddChildToMarriage = useCallback((marriageId, marriageData) => {
+    // Create a new child person and show edit dialog
+    const childId = `person-${Date.now()}-child`;
+    const newChild = {
+      id: childId,
+      type: 'person',
+      data: {
+        name: 'New Child',
+        biologicalSex: 'male',
+        birthDate: '',
+        deathDate: '',
+        location: '',
+        occupation: '',
+        notes: ''
+      },
+      position: { x: 300, y: 400 }
+    };
+    
+    // Add the child node
+    setNodes(nodes => [...nodes, newChild]);
+    
+    // Create edge from marriage to child
+    const childEdge = {
+      id: `edge-${marriageId}-${childId}`,
+      source: marriageId,
+      target: childId,
+      type: 'relationship',
+      data: {
+        relationshipType: 'PARENT_CHILD',
+        sourceLabel: 'parents of',
+        targetLabel: 'child of',
+        isDirectional: true
+      }
+    };
+    
+    setEdges(edges => [...edges, childEdge]);
+    
+    // Open edit dialog for the new child
+    setEditingPerson({ id: childId, ...newChild.data });
+    setIsEditDialogOpen(true);
+    
+    // Update node counter
+    setNodeIdCounter(prev => prev + 1);
+  }, []);
+
+  const handleDeleteMarriage = useCallback((marriageId) => {
+    if (window.confirm('Are you sure you want to delete this marriage?')) {
+      setNodes(nodes => nodes.filter(node => node.id !== marriageId));
+      // TODO: Also delete related edges
+    }
   }, []);
 
 
@@ -409,6 +843,9 @@ const EditFlow = () => {
             <button onClick={addNode} className="add-node-button">
               + Add Person
             </button>
+            <button onClick={handleCreateMarriage} className="add-marriage-button">
+              💒 Add Marriage
+            </button>
             <div className="node-count">
               People: {nodes.length} | Relationships: {edges.length}
             </div>
@@ -442,6 +879,8 @@ const EditFlow = () => {
                 ...node.data,
                 onAddPerson: handleAddPerson,
                 onAddRelative: handleAddRelative,
+                onAddSpouse: handleAddSpouse,
+                onAddParents: handleAddParents,
                 onEdit: handleEditPerson,
                 onDelete: handleDeletePerson,
                 onLink: handleLinkRelative,
@@ -452,7 +891,7 @@ const EditFlow = () => {
                 isLinkingSource: linkingSourceId === node.id
               }
             }))}
-            edges={edges}
+            edges={enhancedEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
@@ -527,6 +966,15 @@ const EditFlow = () => {
         targetPerson={linkingTargetData}
         onSave={handleSaveLinkRelationship}
         onCancel={handleCancelLinking}
+      />
+
+      <MarriageEditDialog
+        isOpen={isMarriageEditDialogOpen}
+        marriageData={editingMarriage}
+        availablePeople={nodes.filter(node => node.type === 'person')}
+        sourcePerson={addRelativeSource}
+        onSave={handleSaveMarriage}
+        onCancel={handleCancelMarriage}
       />
     </div>
   );

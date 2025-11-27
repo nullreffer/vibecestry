@@ -1,0 +1,188 @@
+.marriage-node {
+  position: relative;
+  background: #2d2d2d;
+  border: 2px solid #ff69b4;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 200px;
+  min-height: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.marriage-node:hover {
+  box-shadow: 0 6px 20px rgba(255, 105, 180, 0.3);
+  transform: translateY(-2px);
+  border-color: #ff1493;
+}
+
+.marriage-node.selected {
+  border-color: #6ede87 !important;
+  box-shadow: 0 0 0 3px rgba(110, 222, 135, 0.3) !important;
+}
+
+.marriage-content {
+  color: #ffffff;
+}
+
+.marriage-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.marriage-icon {
+  font-size: 20px;
+}
+
+.marriage-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.marriage-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spouse-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.husband-info, .wife-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.spouse-label {
+  font-weight: 500;
+  color: #ff69b4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.spouse-name {
+  font-weight: 600;
+  color: #ffffff;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marriage-date, .separation-date {
+  text-align: center;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.date-label {
+  font-size: 11px;
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.separation-date .date-label {
+  color: #ff6b6b;
+}
+
+/* Context Menu */
+.marriage-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #2d2d2d;
+  border: 2px solid #ff69b4;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  min-width: 280px;
+}
+
+.marriage-menu-item {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  min-height: 32px;
+  margin-bottom: 8px;
+}
+
+.marriage-menu-item:last-child {
+  margin-bottom: 0;
+}
+
+.edit-btn {
+  background: #6ede87;
+  color: #1a1a1a;
+}
+
+.edit-btn:hover {
+  background: #5cc76f;
+  transform: translateY(-1px);
+}
+
+.add-child-btn {
+  background: #4a90e2;
+  color: #ffffff;
+}
+
+.add-child-btn:hover {
+  background: #6bb3ff;
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: #ff6b6b;
+  color: #ffffff;
+}
+
+.delete-btn:hover {
+  background: #ff5252;
+  transform: translateY(-1px);
+}
+
+/* Connection Handles */
+.marriage-handle {
+  width: 10px !important;
+  height: 10px !important;
+  background: #6ede87 !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 50% !important;
+}
+
+.marriage-handle:hover {
+  background: #5cc76f !important;
+  transform: scale(1.2) !important;
+}

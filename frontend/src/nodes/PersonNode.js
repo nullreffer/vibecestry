@@ -5,9 +5,16 @@ import './PersonNode.css';
 const PersonNode = ({ data, id }) => {
   const [showActions, setShowActions] = useState(false);
 
-  const handleAddRelative = () => {
-    if (data.onAddRelative) {
-      data.onAddRelative(id, data);
+  const handleAddSpouse = () => {
+    if (data.onAddSpouse) {
+      data.onAddSpouse(id, data);
+    }
+    setShowActions(false);
+  };
+
+  const handleAddParents = () => {
+    if (data.onAddParents) {
+      data.onAddParents(id, data);
     }
     setShowActions(false);
   };
@@ -118,17 +125,27 @@ const PersonNode = ({ data, id }) => {
         <div className="action-panel">
           <div className="action-row">
             <button
-              className="action-btn add-btn"
+              className="action-btn spouse-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                handleAddRelative();
+                handleAddSpouse();
               }}
-              title="Add Relative"
+              title="Add Spouse"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-              </svg>
-              Add Relative
+              💕 Add Spouse
+            </button>
+          </div>
+          
+          <div className="action-row">
+            <button
+              className="action-btn parents-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddParents();
+              }}
+              title="Add Parents"
+            >
+              👨‍👩‍👧‍👦 Add Parents
             </button>
           </div>
           

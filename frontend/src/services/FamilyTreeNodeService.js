@@ -35,8 +35,9 @@ export class FamilyTreeNodeService {
         relationshipType = RELATIONSHIP_TYPES.SPOUSE;
         break;
       default:
-        newGeneration = parentGeneration;
-        relationshipType = RELATIONSHIP_TYPES.SIBLING;
+        // No direct sibling relationships allowed - use marriage nodes instead
+        console.warn('Direct sibling creation not allowed - use marriage nodes for family structure');
+        return null;
     }
     
     const newPosition = PositionUtils.calculateNewPosition(parentNodeId, direction, existingNodes);
@@ -101,9 +102,9 @@ export class FamilyTreeNodeService {
       direction = 'spouse';
       newGeneration = parentGeneration;
     } else {
-      // Default to sibling
-      direction = 'sibling';
-      newGeneration = parentGeneration;
+      // No direct sibling relationships allowed - use marriage nodes instead
+      console.warn('Direct sibling creation not allowed - use marriage nodes for family structure');
+      return null;
     }
     
     const newPosition = PositionUtils.calculateNewPosition(parentNodeId, direction, existingNodes);
@@ -155,28 +156,79 @@ export class FamilyTreeNodeService {
       direction = relationshipData.relationshipDirection;
     }
 
-    // Create the relationship edge with direction context
+    // Create the relationship edge with direction context and positions
     const newEdge = RelationshipEdgeService.createEdge(
       sourceId,
       targetId,
       relationshipType,
       sourceNode.data,
       targetNode.data,
-      direction
+      {
+        direction,
+        sourcePosition: sourceNode.position,
+        targetPosition: targetNode.position
+      }
     );
 
     return newEdge;
   }
 
   /**
-   * Update person data
+   * Update person data and related edge labels
    */
-  static updatePersonData(personId, newData, existingNodes) {
-    return existingNodes.map(node => 
+  static updatePersonData(personId, newData, existingNodes, existingEdges = []) {
+    const updatedNodes = existingNodes.map(node => 
       node.id === personId 
         ? { ...node, data: { ...node.data, ...newData } }
         : node
     );
+
+    // If no edges provided, just return updated nodes
+    if (!existingEdges || existingEdges.length === 0) {
+      return { nodes: updatedNodes, edges: existingEdges };
+    }
+
+    // Find the updated person node
+    const updatedPerson = updatedNodes.find(node => node.id === personId);
+    if (!updatedPerson) {
+      return { nodes: updatedNodes, edges: existingEdges };
+    }
+
+    // Update all edges connected to this person to refresh labels
+    const updatedEdges = existingEdges.map(edge => {
+      if (edge.source === personId || edge.target === personId) {
+        const sourceNode = updatedNodes.find(n => n.id === edge.source);
+        const targetNode = updatedNodes.find(n => n.id === edge.target);
+        
+        if (sourceNode && targetNode) {
+          // Regenerate labels with updated person data
+          const { sourceLabel, targetLabel } = RelationshipEdgeService.getDualLabels(
+            edge.data.relationshipType,
+            sourceNode.data,
+            targetNode.data,
+            edge.data.direction || 'bidirectional'
+          );
+          
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              sourceLabel,
+              targetLabel,
+              // Update legacy label for backwards compatibility
+              label: sourceLabel || RelationshipEdgeService.getRelationshipLabel(
+                edge.data.relationshipType, 
+                sourceNode.data, 
+                targetNode.data
+              )
+            }
+          };
+        }
+      }
+      return edge;
+    });
+
+    return { nodes: updatedNodes, edges: updatedEdges };
   }
 
   /**
